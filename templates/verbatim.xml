@@ -40,7 +40,9 @@
     ### What it does
 
     Point it at a folder, tick episodes, and it writes a sidecar `.srt` next to
-    each video that Plex and Jellyfin pick up automatically as an English track.
+    each video. Jellyfin selects it automatically. Plex detects it but does not
+    switch to it — during playback, choose "English (SRT External)" from the
+    subtitle menu, or set it as the default for the series in Plex's settings.
 
     ### How it gets usable output
 
@@ -125,8 +127,28 @@
           Type="Variable" Display="advanced" Required="false" Mask="false">/media</Config>
 
   <Config Name="Output Suffix" Target="OUTPUT_SUFFIX" Default=".en.dubtitles.srt"
-          Description="Filename suffix for generated subtitles. Plex and Jellyfin read this as an English track."
+          Description="Filename suffix for generated subtitles. Jellyfin selects the sidecar automatically; in Plex you must pick 'English (SRT External)' from the subtitle menu."
           Type="Variable" Display="advanced" Required="false" Mask="false">.en.dubtitles.srt</Config>
+
+  <Config Name="Word Repair Provider" Target="POLISH_PROVIDER" Default="gemini"
+          Description="gemini, openai or anthropic. Only the matching API key below is used. Everything here is also editable live on the app's Settings page."
+          Type="Variable" Display="advanced" Required="false" Mask="false">gemini</Config>
+
+  <Config Name="OpenAI API Key" Target="OPENAI_API_KEY" Default=""
+          Description="Only needed when the provider above is openai."
+          Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+
+  <Config Name="Anthropic API Key" Target="ANTHROPIC_API_KEY" Default=""
+          Description="Only needed when the provider above is anthropic."
+          Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+
+  <Config Name="Sonarr Path Translation" Target="SONARR_PATH_MAP" Default=""
+          Description="Only needed when Sonarr and Verbatim mount the library at different paths. Format: /sonarr/path:/verbatim/path"
+          Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+
+  <Config Name="Sonarr Series Types" Target="SONARR_SERIES_TYPES" Default=""
+          Description="Restrict the webhook to certain Sonarr series types: standard, daily, anime. Set 'anime' to caption only anime. Blank accepts everything. Tagging the webhook connection in Sonarr is better still."
+          Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
 
   <Config Name="Speech Sensitivity" Target="VAD_THRESHOLD" Default="0.15"
           Description="Lower recovers quiet dialogue under music. 0.15 measured best on dub audio; 0.30 lost real lines."

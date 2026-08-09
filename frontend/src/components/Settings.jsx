@@ -1,8 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
+import Tip from "./Tip";
 import { getSettings, listPolishModels, saveSettings, testPolish } from "../api";
 
+/** Keys and model IDs that only matter when their provider is selected. */
+const PROVIDER_FIELDS = {
+  gemini: ["GEMINI_API_KEY", "POLISH_MODEL", "POLISH_THINKING"],
+  openai: ["OPENAI_API_KEY", "OPENAI_MODEL"],
+  anthropic: ["ANTHROPIC_API_KEY", "ANTHROPIC_MODEL"],
+};
+const ALL_PROVIDER_FIELDS = Object.values(PROVIDER_FIELDS).flat();
+
+/** Which settings field holds the model ID for the selected provider. */
+const MODEL_FIELD = {
+  gemini: "POLISH_MODEL",
+  openai: "OPENAI_MODEL",
+  anthropic: "ANTHROPIC_MODEL",
+};
+
 function Field({ field, value, onChange }) {
-  const { name, type, label, hint, secret } = field;
+  const { name, type, label, hint, secret, choices } = field;
 
   if (type === "bool") {
     return (
@@ -16,6 +32,28 @@ function Field({ field, value, onChange }) {
           {label}
           <span className="set-hint">{hint}</span>
         </span>
+      </label>
+    );
+  }
+
+  if (choices) {
+    return (
+      <label className="set-row">
+        <span className="set-label">
+          {label}
+          <span className="set-hint">{hint}</span>
+        </span>
+        <select
+          className="field"
+          value={value ?? ""}
+          onChange={(e) => onChange(name, e.target.value)}
+        >
+          {choices.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </label>
     );
   }
@@ -35,6 +73,55 @@ function Field({ field, value, onChange }) {
         onChange={(e) => onChange(name, e.target.value)}
       />
     </label>
+  );
+}
+
+/**
+ * The webhook URL, built from the address the browser is already using.
+ *
+ * Hardcoding a host here would be wrong for exactly the people who need it:
+ * Sonarr usually runs on the same box under a different container name, so
+ * the URL that works is the one the user reached this page on.
+ */
+function SonarrHook({ token }) {
+  const [copied, setCopied] = useState(false);
+  const url =
+    `${window.location.origin}/api/webhook/sonarr` +
+    (token && !token.startsWith("•") ? `?token=${encodeURIComponent(token)}` : "");
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="hook">
+      <span className="set-hint">
+        In Sonarr: <strong>Settings → Connect → + → Webhook</strong>, method POST,
+        triggers <strong>On Import</strong> and <strong>On Upgrade</strong>. To
+        caption only some of your library, tag those series in Sonarr and set the
+        same tag on the connection — Sonarr then never calls out for anything
+        else, which beats filtering here.
+      </span>
+      <div className="hook-url">
+        <code>{url}</code>
+        <Tip text="Copy the URL, then paste it into Sonarr's webhook URL field.">
+          <button className="btn ghost" onClick={copy}>
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </Tip>
+      </div>
+      <span className="set-hint">
+        Sonarr's <em>Test</em> button should return success immediately — it never
+        queues anything. If real imports do nothing, the paths don't match: check
+        the container log for “is not a file here” and set a translation above.
+      </span>
+    </div>
   );
 }
 
@@ -64,9 +151,18 @@ export default function Settings({ onClose }) {
       .catch((e) => setNotice({ bad: true, text: e.message }));
   }, []);
 
+  const provider = values.POLISH_PROVIDER || "gemini";
+
   const change = useCallback((name, v) => {
     setValues((prev) => ({ ...prev, [name]: v }));
     setDirty(true);
+    // A model list or a connection result belongs to the provider it came
+    // from; leaving either on screen after a switch reads as a live status
+    // for the new one.
+    if (name === "POLISH_PROVIDER") {
+      setModels(null);
+      setTest(null);
+    }
   }, []);
 
   const save = async () => {
@@ -100,7 +196,15 @@ export default function Settings({ onClose }) {
 
   const loadModels = async () => {
     setBusy(true);
+    setNotice(null);
     try {
+      // Both of these ask the *server* which provider is selected, so an
+      // unsaved switch would list the previous provider's models under the
+      // new provider's name.
+      if (dirty) {
+        await saveSettings(values);
+        setDirty(false);
+      }
       const d = await listPolishModels();
       setModels(d.models);
     } catch (e) {
@@ -125,9 +229,11 @@ export default function Settings({ onClose }) {
             </span>
           )}
           {dirty && <span className="dirty">unsaved</span>}
-          <button className="btn" onClick={save} disabled={busy || !dirty}>
-            {busy ? "Saving…" : "Save"}
-          </button>
+          <Tip text="Writes to /config/settings.json and applies to the next job. Survives a container recreate; nothing restarts.">
+            <button className="btn" onClick={save} disabled={busy || !dirty}>
+              {busy ? "Saving…" : "Save"}
+            </button>
+          </Tip>
         </div>
       </header>
 
@@ -139,18 +245,33 @@ export default function Settings({ onClose }) {
             <h3>{group.title}</h3>
             <p className="set-blurb">{group.blurb}</p>
 
-            {group.fields.map((f) => (
-              <Field key={f.name} field={f} value={values[f.name]} onChange={change} />
-            ))}
+            {group.fields
+              // Showing three keys and three model IDs at once invites
+              // filling in the wrong pair. Only the selected provider's
+              // fields are rendered.
+              .filter(
+                (f) =>
+                  !ALL_PROVIDER_FIELDS.includes(f.name) ||
+                  (PROVIDER_FIELDS[provider] || []).includes(f.name)
+              )
+              .map((f) => (
+                <Field key={f.name} field={f} value={values[f.name]} onChange={change} />
+              ))}
+
+            {group.key === "sonarr" && <SonarrHook token={values.SONARR_TOKEN} />}
 
             {group.key === "polish" && (
               <div className="set-tools">
-                <button className="btn ghost" onClick={runTest} disabled={busy}>
-                  Test connection
-                </button>
-                <button className="btn ghost" onClick={loadModels} disabled={busy}>
-                  List available models
-                </button>
+                <Tip text="Sends one throwaway prompt to the provider right now, so a bad key or a retired model ID shows up here instead of failing mid-job.">
+                  <button className="btn ghost" onClick={runTest} disabled={busy}>
+                    Test connection
+                  </button>
+                </Tip>
+                <Tip text="Asks the provider which models this key can actually call. Beats guessing an ID that may have been retired.">
+                  <button className="btn ghost" onClick={loadModels} disabled={busy}>
+                    List available models
+                  </button>
+                </Tip>
 
                 {test && (
                   <p className={test.ok ? "test-ok" : "test-bad"}>
@@ -162,14 +283,14 @@ export default function Settings({ onClose }) {
                 {models && (
                   <div className="model-list">
                     <span className="set-hint">
-                      Models your key can call. Click one to use it.
+                      Models your {provider} key can call. Click one to use it.
                     </span>
                     <div className="terms">
                       {models.map((m) => (
                         <button
                           key={m}
                           className="term"
-                          onClick={() => change("POLISH_MODEL", m)}
+                          onClick={() => change(MODEL_FIELD[provider], m)}
                         >
                           {m}
                         </button>

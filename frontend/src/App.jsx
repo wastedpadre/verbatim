@@ -5,7 +5,10 @@ import CueEditor from "./components/CueEditor";
 import Library from "./components/Library";
 import Queue from "./components/Queue";
 import Settings from "./components/Settings";
+import Tip from "./components/Tip";
 import { health, subscribe } from "./api";
+
+const GITHUB = "https://github.com/wastedpadre";
 
 // Used only until /api/health answers, so the editor never renders against
 // undefined rules on a slow first paint.
@@ -76,25 +79,51 @@ export default function App() {
         <div className="chips">
           {info && (
             <>
-              <span className="chip mono">
-                model <strong>{info.model}</strong>
-              </span>
-              <span className="chip mono">
-                <strong>{info.device === "cuda" ? "GPU" : "CPU"}</strong>
-                {info.concurrency > 1 ? ` ×${info.concurrency}` : ""}
-              </span>
+              <Tip text="The speech model this container loaded at startup. Changing it means editing .env and recreating the container.">
+                <span className="chip mono">
+                  model <strong>{info.model}</strong>
+                </span>
+              </Tip>
+              <Tip
+                text={
+                  info.device === "cuda"
+                    ? "Transcribing on the GPU. A 24-minute episode takes a few minutes."
+                    : "Running on CPU — roughly ten times slower. Usually means the --gpus request silently failed."
+                }
+              >
+                <span className="chip mono">
+                  <strong>{info.device === "cuda" ? "GPU" : "CPU"}</strong>
+                  {info.concurrency > 1 ? ` ×${info.concurrency}` : ""}
+                </span>
+              </Tip>
             </>
           )}
-          <span className={`chip ${connected ? "" : "offline"}`}>
-            {connected ? "live" : "reconnecting"}
-          </span>
-          <button
-            className="chip chip-btn"
-            onClick={() => setSettingsOpen(true)}
-            title="Settings"
+          <Tip
+            text={
+              connected
+                ? "Queue updates are streaming live from the server."
+                : "Lost the event stream. The server may be restarting; this reconnects on its own."
+            }
           >
-            Settings
-          </button>
+            <span className={`chip ${connected ? "" : "offline"}`}>
+              {connected ? "live" : "reconnecting"}
+            </span>
+          </Tip>
+          <Tip text="Word repair, VAD tuning, caption shape and the Sonarr webhook. Applies to the next job — no restart.">
+            <button className="chip chip-btn" onClick={() => setSettingsOpen(true)}>
+              Settings
+            </button>
+          </Tip>
+          <Tip text="Questions, bugs and source on GitHub. Opens in a new tab.">
+            <a
+              className="chip chip-btn"
+              href={GITHUB}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Support
+            </a>
+          </Tip>
         </div>
       </header>
 
@@ -109,6 +138,15 @@ export default function App() {
           onPreview={setPreviewing}
         />
       </div>
+
+      <footer className="sitefoot">
+        <span>
+          Verbatim — developed by{" "}
+          <a href={GITHUB} target="_blank" rel="noreferrer">
+            wastedpadre
+          </a>
+        </span>
+      </footer>
     </div>
   );
 }

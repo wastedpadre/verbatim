@@ -13,7 +13,7 @@ from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
 
 from . import config, db, settings
-from .pipeline import probe, runner, segment, srt
+from .pipeline import probe, providers, runner, segment, srt
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"),
                     format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -316,25 +316,50 @@ async def stream(request: Request):
 # ---------------------------------------------------------------- webhook
 
 @app.post("/api/webhook/sonarr")
-async def sonarr(request: Request):
+async def sonarr(request: Request, token: str | None = None):
     """Point Sonarr's 'On Import' connection here to caption new episodes
     automatically. Sonarr sends episodeFile.path on Download events."""
+    if config.SONARR_TOKEN and token != config.SONARR_TOKEN:
+        raise HTTPException(401, "Bad or missing token")
+
     body = await request.json()
     if body.get("eventType") not in ("Download", "Test"):
         return {"ignored": body.get("eventType")}
     if body.get("eventType") == "Test":
         return {"ok": True}
 
-    created = []
+    series = body.get("series") or {}
+    allowed, kind = config.sonarr_series_allowed(series)
+    if not allowed:
+        # Logged rather than dropped quietly: "the webhook stopped working"
+        # and "the webhook is filtering correctly" look identical otherwise.
+        log.info("sonarr webhook: skipping %r (series type %r, accepting %s)",
+                 series.get("title", "?"), kind or "unset",
+                 config.SONARR_SERIES_TYPES)
+        return {"skipped": series.get("title"), "series_type": kind}
+
+    created, unreachable = [], []
     for ep in body.get("episodeFiles") or [body.get("episodeFile") or {}]:
         raw = ep.get("path")
         if not raw:
             continue
-        p = Path(raw)
-        if p.is_file() and not db.has_active(str(p)):
+        # Sonarr reports the path as Sonarr sees it, which is only our path
+        # when both containers mount the library identically.
+        p = Path(config.remap_sonarr_path(raw))
+        if not p.is_file():
+            # The single most common webhook failure, and previously silent:
+            # the POST succeeded, nothing was queued, and nothing said why.
+            unreachable.append({"sonarr": raw, "looked_for": str(p)})
+            continue
+        if not db.has_active(str(p)):
             created.append(db.enqueue(p, p.stem))
+
+    for miss in unreachable:
+        log.warning("sonarr webhook: %s is not a file here (Sonarr said %s) — "
+                    "set a path translation in Settings",
+                    miss["looked_for"], miss["sonarr"])
     log.info("sonarr webhook queued %d job(s)", len(created))
-    return {"created": created}
+    return {"created": created, "unreachable": unreachable}
 
 
 # ------------------------------------------------------------------ settings
@@ -359,64 +384,23 @@ def put_settings(body: SettingsBody):
 
 @app.post("/api/settings/test-polish")
 def test_polish():
-    """Live check against the Gemini API.
+    """Live check against whichever provider is selected.
 
     Model IDs get retired regularly and a stale one fails with a 404 only
     once a job reaches the polish stage, minutes in. This surfaces it in a
     couple of seconds instead.
     """
-    import requests
-
-    if not config.GEMINI_API_KEY:
-        return {"ok": False, "detail": "No API key set."}
-
-    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
-           f"{config.POLISH_MODEL}:generateContent")
-    try:
-        r = requests.post(url, params={"key": config.GEMINI_API_KEY},
-                          json={"contents": [{"parts": [{"text": "Reply with: OK"}]}]},
-                          timeout=25)
-    except requests.RequestException as exc:
-        return {"ok": False, "detail": f"Could not reach Google: {exc}"}
-
-    if r.status_code == 200:
-        return {"ok": True, "detail": f"{config.POLISH_MODEL} responded normally."}
-
-    try:
-        msg = r.json().get("error", {}).get("message", r.text[:200])
-    except ValueError:
-        msg = r.text[:200]
-
-    if r.status_code == 404:
-        return {"ok": False, "detail": f"Model not available. {msg}",
-                "models_hint": True}
-    if r.status_code in (400, 401, 403):
-        return {"ok": False, "detail": f"Key rejected. {msg}"}
-    return {"ok": False, "detail": f"HTTP {r.status_code}. {msg}"}
+    ok, detail = providers.test()
+    return {"ok": ok, "detail": detail, "provider": config.POLISH_PROVIDER}
 
 
 @app.get("/api/settings/models")
 def list_models():
     """Which models this key can actually call — beats guessing."""
-    import requests
-
-    if not config.GEMINI_API_KEY:
-        raise HTTPException(400, "No API key set.")
     try:
-        r = requests.get("https://generativelanguage.googleapis.com/v1beta/models",
-                         params={"key": config.GEMINI_API_KEY}, timeout=25)
-        r.raise_for_status()
-    except requests.RequestException as exc:
-        raise HTTPException(502, f"Could not reach Google: {exc}")
-
-    names = [
-        m["name"].replace("models/", "")
-        for m in r.json().get("models", [])
-        if "generateContent" in m.get("supportedGenerationMethods", [])
-    ]
-    # Flash-class models are the sensible choice for constrained substitution.
-    preferred = [n for n in names if "flash" in n or "lite" in n]
-    return {"models": preferred or names}
+        return {"models": providers.models(), "provider": config.POLISH_PROVIDER}
+    except providers.ProviderError as exc:
+        raise HTTPException(400, str(exc))
 
 
 @app.get("/api/health")
@@ -426,6 +410,11 @@ def health():
         "model": config.MODEL_SIZE,
         "device": config.DEVICE,
         "concurrency": config.CONCURRENCY,
+        "polish": {
+            "enabled": config.POLISH_ENABLED,
+            "provider": config.POLISH_PROVIDER,
+            "model": config.polish_model(),
+        },
         # The editor validates against these rather than hardcoding its own
         # copy, so changing .env changes both sides at once.
         "rules": {

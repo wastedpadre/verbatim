@@ -147,8 +147,12 @@ Watch the caption bay at the top. Once words start appearing, check they
 match what's being said in the dub. If they're nonsense, it picked the
 Japanese track — see Troubleshooting in `README.md`.
 
-When it finishes, the `.srt` lands next to your video file and Jellyfin or
-Plex will pick it up automatically as an English subtitle track.
+When it finishes, the `.srt` lands next to your video file.
+
+Jellyfin turns it on by itself. **Plex will not** — start the episode, open the
+subtitle menu, and pick **English (SRT External)**. That's a per-series default
+you can set once under *Settings → Subtitles*; until you do, Plex plays with
+subtitles off even though the file is right there.
 
 ---
 

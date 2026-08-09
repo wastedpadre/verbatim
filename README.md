@@ -81,8 +81,15 @@ docker compose up -d --build
 Open `http://<host>:8080`, browse to a folder, tick episodes, hit
 **Caption episodes**.
 
-Output lands next to the video as `Episode.en.dubtitles.srt`, which Jellyfin
-and Plex both pick up automatically as an English track. No remux needed.
+Output lands next to the video as `Episode.en.dubtitles.srt`. No remux needed.
+
+**Selecting it in your player.** Jellyfin detects the sidecar and turns it on by
+itself. **Plex detects it but will not switch to it** — during playback, open the
+subtitle menu and choose **English (SRT External)**. To stop doing that every
+episode, set it once per series under *Settings → Subtitles*, or enable
+*Automatically select subtitles* in your Plex player preferences. If it isn't
+listed at all, Plex hasn't rescanned the folder yet: *Scan Library Files* on
+that show.
 
 ### On Unraid
 
@@ -102,22 +109,70 @@ First run downloads the model (~3 GB for large-v3) into `/config/models`.
 
 ## Automating it
 
-Point Sonarr at the webhook and new episodes caption themselves on import:
-
-**Settings → Connect → Webhook**
-- URL: `http://<host>:8080/api/webhook/sonarr`
-- Triggers: **On Import** and **On Upgrade**
+Point Sonarr at the webhook and new episodes caption themselves on import.
+**Settings → Sonarr webhook** in the app shows the exact URL for your host with
+a copy button; in Sonarr it goes under **Settings → Connect → + → Webhook**,
+method POST, triggers **On Import** and **On Upgrade**.
 
 One catch: Sonarr sends the path *as Sonarr sees it*. If Sonarr's path is
-`/tv/Show/Episode.mkv` and Verbatim's is `/media/Show/Episode.mkv`, the
-webhook can't find the file. Easiest fix is to mount the same host path at the
-same container path in both.
+`/tv/Show/Episode.mkv` and Verbatim's is `/media/Show/Episode.mkv`, the webhook
+can't find the file — and the POST still succeeds, so nothing looks wrong.
+Either mount the same host path at the same container path in both (simplest),
+or set a translation: `SONARR_PATH_MAP=/tv:/media`. When a path doesn't
+resolve, the container log says `is not a file here` and names both sides.
+
+Sonarr's own **Test** button always succeeds — it sends no file path, so it
+proves the URL is reachable and nothing else.
+
+### Captioning only part of your library
+
+Two ways, and the first is better because nothing leaves Sonarr:
+
+1. **Tag the connection.** Tag your anime series in Sonarr, then set that same
+   tag on the webhook under **Connect → Webhook → Tags**. Sonarr only fires for
+   tagged series, so a new sitcom import never reaches Verbatim at all.
+2. **Filter here.** Set `SONARR_SERIES_TYPES=anime` (or **Settings → Sonarr
+   webhook → Only these series types**). Sonarr classifies every series as
+   `standard`, `daily` or `anime` and sends that on the webhook; anything else
+   is skipped and logged with the type it saw. Blank accepts everything.
+
+Use the second as a backstop for the first — a series added without the tag
+still gets filtered. If you set a type filter and *nothing* gets captioned,
+check the log: it prints the series type it actually received, which is
+`unset` on Sonarr versions that don't send the field.
+
+---
+
+## Word repair providers
+
+The optional repair pass runs on **Gemini, OpenAI or Anthropic** — set
+`POLISH_PROVIDER`, or switch it live under **Settings → Word repair**. Each
+provider keeps its own key and model, so switching doesn't leave a model ID
+pointing at the wrong API.
+
+| Provider | Key from | Default model |
+|---|---|---|
+| `gemini` | aistudio.google.com | `gemini-flash-latest` |
+| `openai` | platform.openai.com/api-keys | `gpt-4.1-mini` |
+| `anthropic` | console.anthropic.com | `claude-opus-5` |
+
+The task is constrained substitution, not reasoning, so the cheapest model in a
+family is usually enough — `claude-haiku-4-5` instead of Opus, a mini-class
+model on OpenAI. **Test connection** sends one throwaway prompt so a bad key or
+a retired model ID surfaces in seconds rather than minutes into a job, and
+**List available models** asks the provider what your key can actually call.
+
+Whichever provider is selected, the same four guards apply to every proposed
+change, and a provider failure never fails the job — the window keeps its
+original cues.
 
 ---
 
 ## Tuning
 
-Everything lives in `.env`.
+Everything lives in `.env`. Anything that's re-read per job is also editable
+live under **Settings**, including the VAD parameters below — those apply to
+the next job with no restart and no rebuild.
 
 | Variable | Do this if… |
 |---|---|

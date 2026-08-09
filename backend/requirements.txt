@@ -16,3 +16,11 @@ ctranslate2==4.5.0
 # on startup with ModuleNotFoundError: No module named 'requests'.
 requests>=2.32.0
 huggingface_hub>=0.24,<1.0
+
+# Optional word-repair providers. Both are pure Python and add a few MB to a
+# multi-gigabyte CUDA image, so they ship installed rather than as an extra:
+# a missing SDK would only surface as an ImportError minutes into a job.
+# Gemini stays on plain requests -- it predates these and its REST shape is
+# one POST, so an SDK would be all cost and no benefit.
+openai>=1.60
+anthropic>=0.49

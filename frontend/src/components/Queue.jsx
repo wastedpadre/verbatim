@@ -1,3 +1,4 @@
+import Tip from "./Tip";
 import { remove, retry, srtUrl } from "../api";
 
 const STATE_LABEL = {
@@ -79,25 +80,35 @@ function Job({ job, onChange, onEdit, onPreview }) {
 
       <div className="job-actions">
         {job.status === "done" && (
-          <button className="mini accent" onClick={() => onPreview?.(job)}>
-            Preview playback
-          </button>
+          <Tip text="Plays the cues on their real timestamps so you can check the timing without opening the video.">
+            <button className="mini accent" onClick={() => onPreview?.(job)}>
+              Preview playback
+            </button>
+          </Tip>
         )}
         {job.status === "done" && (
-          <button className="mini" onClick={() => onEdit?.(job)}>Edit captions</button>
+          <Tip text="Find-and-replace, split, merge and retime. Saves straight over the .srt next to your video.">
+            <button className="mini" onClick={() => onEdit?.(job)}>Edit captions</button>
+          </Tip>
         )}
         {job.status === "done" && (
-          <a className="mini" href={srtUrl(job.id)} download>Download SRT</a>
+          <Tip text="Download a copy. The file is already written next to the video — this is only for taking it elsewhere.">
+            <a className="mini" href={srtUrl(job.id)} download>Download SRT</a>
+          </Tip>
         )}
         {job.status === "failed" && (
-          <button className="mini" onClick={() => retry(job.id).then(onChange)}>
-            Run again
-          </button>
+          <Tip text="Re-queue this episode. Settings changes since it failed will apply.">
+            <button className="mini" onClick={() => retry(job.id).then(onChange)}>
+              Run again
+            </button>
+          </Tip>
         )}
         {!active && (
-          <button className="mini" onClick={() => remove(job.id).then(onChange)}>
-            Remove
-          </button>
+          <Tip text="Drops the job from this list. Any .srt already written is left alone.">
+            <button className="mini" onClick={() => remove(job.id).then(onChange)}>
+              Remove
+            </button>
+          </Tip>
         )}
       </div>
     </article>
@@ -106,6 +117,7 @@ function Job({ job, onChange, onEdit, onPreview }) {
 
 export default function Queue({ jobs, onChange, onEdit, onPreview }) {
   const pending = jobs.filter((j) => !["done", "failed"].includes(j.status)).length;
+  const anyDone = jobs.some((j) => j.status === "done");
 
   return (
     <section className="pane">
@@ -115,6 +127,19 @@ export default function Queue({ jobs, onChange, onEdit, onPreview }) {
           {pending ? `${pending} pending` : `${jobs.length} total`}
         </span>
       </div>
+
+      {/* Shown once a file exists on disk, because that is the moment the
+          question comes up. Plex finds the sidecar but does not switch to
+          it, and "the subtitles didn't work" is otherwise where this ends. */}
+      {anyDone && (
+        <p className="pane-note">
+          The <code>.srt</code> is written next to the video. Jellyfin selects it
+          on its own; <strong>Plex does not</strong> — play the episode, open the
+          subtitle menu and pick{" "}
+          <strong>English (SRT External)</strong>. Set it as the default for the
+          series under <em>Settings → Subtitles</em> if you don't want to repeat it.
+        </p>
+      )}
 
       <div className="rows" style={{ maxHeight: 560 }}>
         {jobs.length ? (

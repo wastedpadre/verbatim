@@ -80,8 +80,20 @@
           Type="Variable" Display="advanced" Required="false" Mask="false">/config</Config>
 
   <Config Name="Output Suffix" Target="OUTPUT_SUFFIX" Default=".en.dubtitles.srt"
-          Description="Filename suffix for generated subtitles. Jellyfin and Plex both read this as an English track."
+          Description="Filename suffix for generated subtitles. Jellyfin selects the sidecar automatically; in Plex you must pick 'English (SRT External)' from the subtitle menu."
           Type="Variable" Display="advanced" Required="false" Mask="false">.en.dubtitles.srt</Config>
+
+  <Config Name="Word Repair Provider" Target="POLISH_PROVIDER" Default="gemini"
+          Description="gemini, openai or anthropic. Only the matching API key is used. Also editable live on the app's Settings page."
+          Type="Variable" Display="advanced" Required="false" Mask="false">gemini</Config>
+
+  <Config Name="OpenAI API Key" Target="OPENAI_API_KEY" Default=""
+          Description="Only needed when the provider above is openai."
+          Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+
+  <Config Name="Anthropic API Key" Target="ANTHROPIC_API_KEY" Default=""
+          Description="Only needed when the provider above is anthropic."
+          Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
 
   <Config Name="Max Chars Per Line" Target="MAX_CHARS_PER_LINE" Default="42"
           Description="Lower this to about 37 if you mostly watch on a phone."

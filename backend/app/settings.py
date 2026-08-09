@@ -25,26 +25,48 @@ _lock = threading.Lock()
 # name -> (type, group, label, hint)
 EDITABLE = {
     "POLISH_ENABLED": (bool, "polish", "Repair misheard words",
-                       "Sends cue text to Google. Roughly 2 cents an episode."),
+                       "Sends cue text to the provider below. Roughly 2 cents an episode."),
+    "POLISH_PROVIDER": (str, "polish", "Provider",
+                        "Which vendor runs the pass. Each keeps its own key and model below."),
     "GEMINI_API_KEY": (str, "polish", "Gemini API key",
-                       "From aistudio.google.com. Stored on your server."),
-    "POLISH_MODEL": (str, "polish", "Model",
+                       "From aistudio.google.com. Stored on your server, never sent anywhere else."),
+    "POLISH_MODEL": (str, "polish", "Gemini model",
                      "Google retires model IDs often. Use Test connection after changing."),
+    "OPENAI_API_KEY": (str, "polish", "OpenAI API key",
+                       "From platform.openai.com/api-keys. Stored on your server."),
+    "OPENAI_MODEL": (str, "polish", "OpenAI model",
+                     "A mini/small model is plenty — this is substitution, not reasoning."),
+    "ANTHROPIC_API_KEY": (str, "polish", "Anthropic API key",
+                          "From console.anthropic.com. Stored on your server."),
+    "ANTHROPIC_MODEL": (str, "polish", "Anthropic model",
+                        "claude-haiku-4-5 costs a fraction of Opus and is usually enough here."),
     "POLISH_CONCURRENCY": (int, "polish", "Parallel requests",
                            "Lower this if you hit rate limits."),
-    "POLISH_THINKING": (str, "polish", "Thinking level",
-                        "minimal for Gemini 3.x. More reasoning is latency you don't need here."),
+    "POLISH_THINKING": (str, "polish", "Gemini thinking level",
+                        "minimal for Gemini 3.x. Ignored by the other two providers."),
     "POLISH_MIN_SIMILARITY": (float, "polish", "Minimum similarity",
                               "Reject a correction that rewrites more than this much of a line."),
     "POLISH_MAX_WORD_DELTA": (int, "polish", "Max word count change",
                               "1 is safe. Higher lets rephrasing through."),
 
-    "VAD_FILTER": (bool, "audio", "Gate non-speech audio",
-                   "Off lets the model hallucinate over music. Leave on."),
-    "VAD_THRESHOLD": (float, "audio", "Speech sensitivity",
-                      "Lower recovers quiet dialogue under scoring. 0.15 measured best."),
     "BEAM_SIZE": (int, "audio", "Beam size",
                   "Higher is marginally more accurate and slower."),
+
+    "VAD_FILTER": (bool, "vad", "Gate non-speech audio",
+                   "Off hands all audio to the model and lets the hallucination "
+                   "filters clean up after. Worth trying if lines go missing."),
+    "VAD_THRESHOLD": (float, "vad", "Speech sensitivity",
+                      "0 to 1. Lower recovers quiet dialogue under scoring; 0.15 "
+                      "measured best on dub audio, 0.30 lost real lines."),
+    "VAD_MIN_SPEECH_MS": (int, "vad", "Shortest speech (ms)",
+                          "Bursts shorter than this are discarded as noise. Raise it "
+                          "if single-syllable effects are being transcribed."),
+    "VAD_MIN_SILENCE_MS": (int, "vad", "Shortest silence (ms)",
+                           "A gap shorter than this doesn't split speech. Long values "
+                           "merge a pause into the next line and clip its opening."),
+    "VAD_SPEECH_PAD_MS": (int, "vad", "Padding around speech (ms)",
+                          "Kept either side of detected speech. Raise it if the first "
+                          "word of lines is being cut off."),
 
     "MAX_CHARS_PER_LINE": (int, "captions", "Characters per line",
                            "Lower to about 37 if you mostly watch on a phone."),
@@ -55,14 +77,35 @@ EDITABLE = {
                       "Changing this orphans existing files and re-queues them as uncaptioned."),
     "OVERWRITE": (bool, "captions", "Overwrite existing subtitles",
                   "Off appends a timestamp instead of replacing."),
+
+    "SONARR_SERIES_TYPES": (str, "sonarr", "Only these series types",
+                            "Sonarr classifies every series as standard, daily or "
+                            "anime. Put 'anime' here to caption only anime and "
+                            "ignore the rest of the library. Blank accepts everything."),
+    "SONARR_PATH_MAP": (str, "sonarr", "Path translation",
+                        "Only needed when Sonarr and Verbatim mount the library at "
+                        "different paths. Format: /sonarr/path:/verbatim/path"),
+    "SONARR_TOKEN": (str, "sonarr", "Webhook token",
+                     "Optional. When set, the URL below must carry ?token=… or the "
+                     "POST is rejected."),
 }
 
-SECRETS = {"GEMINI_API_KEY"}
+SECRETS = {"GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "SONARR_TOKEN"}
+
+# Fields the UI should render as a picker rather than a free text box.
+CHOICES = {"POLISH_PROVIDER": list(config.PROVIDERS)}
 
 GROUPS = [
-    ("polish", "Word repair", "Fixes words the decoder misheard but which are wrong in context."),
+    ("polish", "Word repair",
+     "Fixes words the decoder misheard but which are wrong in context. "
+     "Optional, off by default, and the only feature that sends anything off your server."),
     ("audio", "Audio and transcription", "How much audio reaches the model."),
+    ("vad", "Voice activity detection",
+     "VAD gates audio BEFORE the model sees it, so whatever it drops is gone for "
+     "good. On dub audio with loud scoring this is the usual cause of missing "
+     "dialogue. These apply to the next job — no restart, no rebuild."),
     ("captions", "Caption formatting", "Shape and naming of the output."),
+    ("sonarr", "Sonarr webhook", "Caption new episodes automatically as they import."),
 ]
 
 
@@ -74,7 +117,12 @@ def _coerce(name: str, raw):
         return int(raw)
     if kind is float:
         return float(raw)
-    return str(raw)
+    value = str(raw)
+    # A bad provider name would otherwise be stored happily and only fail at
+    # the polish stage, minutes into a job.
+    if name in CHOICES and value not in CHOICES[name]:
+        raise ValueError(f"must be one of {', '.join(CHOICES[name])}")
+    return value
 
 
 def load():
@@ -120,8 +168,9 @@ def save(updates: dict) -> dict:
                 continue
             try:
                 value = _coerce(name, raw)
-            except (TypeError, ValueError):
-                raise ValueError(f"{EDITABLE[name][2]}: '{raw}' is not valid")
+            except (TypeError, ValueError) as exc:
+                reason = str(exc) if name in CHOICES else "is not valid"
+                raise ValueError(f"{EDITABLE[name][2]}: '{raw}' {reason}")
             setattr(config, name, value)
             applied[name] = value
 
@@ -145,7 +194,7 @@ def schema() -> list[dict]:
     for key, title, blurb in GROUPS:
         fields = [
             {"name": n, "type": t.__name__, "label": lbl, "hint": hint,
-             "secret": n in SECRETS}
+             "secret": n in SECRETS, "choices": CHOICES.get(n)}
             for n, (t, g, lbl, hint) in EDITABLE.items() if g == key
         ]
         out.append({"key": key, "title": title, "blurb": blurb, "fields": fields})

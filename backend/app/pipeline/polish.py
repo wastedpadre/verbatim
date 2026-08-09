@@ -17,17 +17,13 @@ which is worse than leaving the error in. Four independent guards below.
 """
 import concurrent.futures
 import difflib
-import json
 import logging
 import re
 
-import requests
-
 from .. import config
+from . import providers
 
 log = logging.getLogger("verbatim.polish")
-
-ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 SYSTEM = """You are correcting an automatic transcription of an English anime dub.
 
@@ -45,29 +41,8 @@ You MUST NOT:
 Dub dialogue is often clipped, informal, or ungrammatical on purpose. That is
 not an error. If you are not certain a word was misheard, leave the line alone.
 
-Return ONLY a JSON array of the lines you changed, each as
-{"i": <index>, "text": "<corrected line>"}.
-Return [] if nothing needs fixing. No prose, no markdown fences."""
-
-
-def _thinking_config() -> dict:
-    """Thinking controls differ by model generation and can't be combined.
-
-    Gemini 3.x takes thinkingLevel ("minimal" is the floor for Flash -- it
-    cannot be switched off entirely). Gemini 2.5 takes thinkingBudget, where
-    0 does disable it. Sending both returns a 400, so pick one by model name.
-
-    Either way we want the least reasoning available: this is constrained
-    find-and-replace with hard guards, and thinking is latency we don't need.
-    """
-    if not config.POLISH_THINKING:
-        return {}
-    model = config.POLISH_MODEL
-    if "-3" in model or "latest" in model:
-        return {"thinkingConfig": {"thinkingLevel": config.POLISH_THINKING}}
-    if "2.5" in model or "2-5" in model:
-        return {"thinkingConfig": {"thinkingBudget": 0}}
-    return {}
+Report only the lines you changed, and nothing when nothing needs fixing.
+No prose, no markdown fences."""
 
 
 def _similarity(a: str, b: str) -> float:
@@ -99,43 +74,8 @@ def _call(cues: list[dict], terms: list[str], offset: int) -> list[dict]:
                     "prefer them when a similar-sounding word appears:\n"
                     + ", ".join(terms[:60]) + "\n")
 
-    prompt = f"{SYSTEM}\n{glossary}\nLines:\n{numbered}"
-
-    resp = requests.post(
-        ENDPOINT.format(model=config.POLISH_MODEL),
-        params={"key": config.GEMINI_API_KEY},
-        json={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                **_thinking_config(),
-                # Deprecated on newer Gemini models (ignored rather than
-                # rejected), but harmless to send and still honoured by
-                # older ones. If it is ignored, polish output stops being
-                # deterministic between runs -- the guards below don't care,
-                # since each proposed change is validated on its own merits.
-                "temperature": 0,
-                "responseMimeType": "application/json",
-            },
-        },
-        timeout=90,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-
-    try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError):
-        log.warning("polish: unexpected response shape, skipping window")
-        return []
-
-    text = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.M).strip()
-    try:
-        parsed = json.loads(text)
-    except json.JSONDecodeError:
-        log.warning("polish: model returned non-JSON, skipping window")
-        return []
-
-    return parsed if isinstance(parsed, list) else []
+    prompt = f"{SYSTEM}\n{providers.ENVELOPE}\n{glossary}\nLines:\n{numbered}"
+    return providers.complete(prompt)
 
 
 def _acceptable(original: str, proposed: str) -> tuple[bool, str]:
@@ -171,7 +111,7 @@ def polish(cues: list[dict], terms: list[str]) -> tuple[list[dict], list[dict]]:
 
     Cues are returned in the same order and the same count as they came in.
     """
-    if not config.POLISH_ENABLED or not config.GEMINI_API_KEY or not cues:
+    if not config.POLISH_ENABLED or not config.polish_key() or not cues:
         return cues, []
 
     out = [dict(c) for c in cues]
@@ -179,14 +119,15 @@ def polish(cues: list[dict], terms: list[str]) -> tuple[list[dict], list[dict]]:
     seen: set[int] = set()
 
     spans = list(_windows(len(cues), config.POLISH_WINDOW, config.POLISH_OVERLAP))
-    log.info("polish: %d cues in %d windows, %d at a time",
-             len(cues), len(spans), config.POLISH_CONCURRENCY)
+    log.info("polish: %d cues in %d windows, %d at a time, via %s/%s",
+             len(cues), len(spans), config.POLISH_CONCURRENCY,
+             config.POLISH_PROVIDER, config.polish_model())
 
     def fetch(span):
         start, end = span
         try:
             return span, _call(cues[start:end], terms, start)
-        except requests.RequestException as exc:
+        except providers.ProviderError as exc:
             # A polish failure must never fail the job -- unpolished cues are
             # still perfectly usable output.
             log.warning("polish: window %d-%d failed (%s), keeping originals",
