@@ -102,9 +102,9 @@ leave you running on CPU.
 
 Short version: install the **Nvidia Driver** plugin and reboot, install
 **Docker Compose Manager**, copy the source to
-`/mnt/user/appdata/verbatim-src`, then Compose Up. An Unraid Docker template
-(`unraid-template.xml`) is included if you'd rather manage it from the Docker
-tab.
+`/mnt/user/appdata/verbatim-src`, then Compose Up. If you'd rather manage it
+from the Docker tab and skip the build entirely, `templates/verbatim.xml`
+installs the published image instead.
 
 First run downloads the model (~3 GB for large-v3) into `/config/models`.
 
@@ -254,7 +254,8 @@ dialogue-heavy scene, lower the threshold.
 ```
 UNRAID.md              Unraid setup guide (start here on Unraid)
 START-HERE.md          Windows / generic Docker setup guide
-unraid-template.xml    optional Unraid Docker template
+templates/verbatim.xml Unraid Docker template, pulls the published image
+ca_profile.xml         maintainer profile for Community Applications
 backend/app/
   main.py              FastAPI routes, SSE, static serving
   db.py                SQLite job store

@@ -25,8 +25,8 @@ GPU-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 The project ships `NVIDIA_VISIBLE_DEVICES=all`, which hands over every card and
 needs no editing. To pin one card instead (worth doing if the box has a second
-GPU you want left alone), put that UUID in `docker-compose.yml` and
-`unraid-template.xml`.
+GPU you want left alone), put that UUID in `docker-compose.yml`, or in the
+`NVIDIA_VISIBLE_DEVICES` field if you install via the template.
 
 **2. Compose Manager plugin.** Apps tab → search `Docker Compose Manager` →
 install. No reboot needed.
@@ -138,21 +138,23 @@ docker compose up -d --build
 ## Path B: Unraid template (optional)
 
 This gets Verbatim into the Docker tab with a proper WebUI button, editable
-variables, and Unraid's normal start/stop controls.
-
-**It does not replace Path A.** The template has no registry to pull from, so
-the image must already exist locally. Build it first with Path A step 4, then:
+variables, and Unraid's normal start/stop controls. It pulls the published
+image, so there is nothing to build and the source doesn't need to be on the
+server at all.
 
 ```bash
-cp /mnt/user/appdata/verbatim-src/unraid-template.xml \
-   /boot/config/plugins/dockerMan/templates-user/my-verbatim.xml
+curl -o /boot/config/plugins/dockerMan/templates-user/my-verbatim.xml \
+  https://raw.githubusercontent.com/wastedpadre/verbatim/main/templates/verbatim.xml
 ```
 
-**Docker tab → Add Container →** pick `verbatim` from the template dropdown at
-the top. Check the paths, hit Apply.
+**Docker tab → Add Container →** pick `Verbatim` from the template dropdown at
+the top. Check the two paths, hit Apply. The first start pulls about 7 GB.
 
-If you go this route, stop the Compose stack first so you don't have two
+If you already ran Path A, stop the Compose stack first so you don't have two
 containers fighting over port 8080.
+
+Path A is still the one to use if you plan to change the code, since it builds
+from your working copy rather than pulling a fixed image.
 
 ---
 
