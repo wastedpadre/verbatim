@@ -174,11 +174,24 @@ def _openai_complete(prompt: str) -> list[dict]:
     return _parse(resp.choices[0].message.content or "")
 
 
+# A real key sees ~110 models once you keep everything starting with "gpt"
+# or "o", and most of them cannot answer a text prompt. These substrings mark
+# the families to drop so the picker stays usable.
+_OPENAI_NON_CHAT = ("tts", "transcribe", "audio", "realtime", "image",
+                    "embedding", "moderation", "dall-e", "whisper",
+                    "search-preview", "computer-use")
+
+
 def _openai_models() -> list[str]:
     names = sorted(m.id for m in _openai_client().models.list())
-    # Chat models only -- the key can also see embeddings, audio and image
-    # models, none of which can answer this prompt.
-    chat = [n for n in names if n.startswith("gpt") or n.startswith("o")]
+    chat = [
+        n for n in names
+        if (n.startswith("gpt") or n.startswith("o"))
+        and not any(t in n for t in _OPENAI_NON_CHAT)
+        # Dated snapshots duplicate their alias (gpt-4.1-mini-2025-04-14
+        # alongside gpt-4.1-mini) and double the list for no benefit.
+        and not re.search(r"-\d{4}-\d{2}-\d{2}$", n)
+    ]
     return chat or names
 
 

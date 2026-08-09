@@ -120,7 +120,10 @@ RESTART_REQUIRED = {"MODEL_SIZE", "COMPUTE_TYPE"}
 SUGGESTIONS = {
     "ANTHROPIC_MODEL": ["claude-haiku-4-5", "claude-sonnet-5",
                         "claude-opus-4-8", "claude-opus-5"],
-    "OPENAI_MODEL": ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"],
+    # Confirmed present on a real key. Availability varies by account tier,
+    # which is what "Refresh model list" is for.
+    "OPENAI_MODEL": ["gpt-4.1-mini", "gpt-4.1-nano", "gpt-4o-mini",
+                     "gpt-5-mini", "gpt-5.4-mini", "gpt-5"],
     "POLISH_MODEL": ["gemini-flash-latest", "gemini-3.6-flash",
                      "gemini-3.5-flash-lite"],
 }
