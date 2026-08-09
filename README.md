@@ -298,3 +298,35 @@ This transcribes audio from files you already have, for your own playback. It
 doesn't download anything or fetch subtitles from anywhere. Generated captions
 are a derivative of the original dub script: fine for personal accessibility
 use, worth thinking twice about redistributing.
+
+---
+
+## Licence and third-party components
+
+The contents of this repository, the application code, the Unraid templates
+and the docs, are **MIT** (see `LICENSE`).
+
+The published container image is a separate matter, because it bundles
+software under other licences:
+
+| Component | Licence | How it's used |
+|---|---|---|
+| ffmpeg / ffprobe | GPL-2+ as built by Ubuntu | Separate executables, run via the command line |
+| mkvtoolnix | GPL-2+ | Separate executable, run via the command line |
+| tini | MIT | Init process, reaps ffmpeg subprocesses |
+| `nvidia/cuda` base image | NVIDIA's licence terms for its container images | Base layer providing CUDA and cuDNN |
+| Python packages | MIT, BSD and Apache-2.0 | faster-whisper and ctranslate2 are MIT |
+| Whisper model weights | MIT | Downloaded to `/config` on first run, not baked into the image |
+
+Ubuntu builds ffmpeg with `--enable-gpl`, so the binary that ships in the
+image is GPL-2+ even though most of ffmpeg's own source is LGPL-2.1+. The
+same applies to mkvtoolnix.
+
+None of that changes the licence of the code here. Verbatim never links
+against those tools; it runs them as separate processes and reads their
+output, which is ordinary command-line use rather than the creation of a
+derivative work. Nothing copyleft is linked into the Python application.
+
+If you redistribute the image rather than pull it from GHCR, the GPL
+obligations for those binaries travel with it. They are unmodified Ubuntu
+packages, so pointing at Ubuntu's published source satisfies that.
