@@ -12,7 +12,10 @@
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
 
-  <Support>https://github.com/wastedpadre/verbatim/discussions</Support>
+  <!-- Issues rather than Discussions: this is the link Unraid puts on the
+       container's Support button, and what arrives through it is almost
+       always a bug report, which wants a tracker with open/closed state. -->
+  <Support>https://github.com/wastedpadre/verbatim/issues</Support>
   <Project>https://github.com/wastedpadre/verbatim</Project>
   <Icon>https://raw.githubusercontent.com/wastedpadre/verbatim/main/frontend/public/icon-192.png</Icon>
   <TemplateURL>https://raw.githubusercontent.com/wastedpadre/verbatim/main/templates/verbatim.xml</TemplateURL>

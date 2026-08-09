@@ -301,6 +301,21 @@ use, worth thinking twice about redistributing.
 
 ---
 
+## Support
+
+- **Bugs and feature requests:** [Issues](https://github.com/wastedpadre/verbatim/issues)
+- **Questions and setup help:** [Discussions](https://github.com/wastedpadre/verbatim/discussions).
+  Start with the pinned *Start here* thread, which covers the requirements, the
+  two things that trip almost everyone, and the current known issues.
+- **Unraid forums:** [mrskc303](https://forums.unraid.net/profile/174026-mrskc303/)
+
+Whichever you pick, the single most useful thing you can include is the log.
+Hit **Show logs** in the top bar and paste the relevant lines, along with your
+GPU, the model size and precision you're running, and which audio track the
+job card says it chose.
+
+---
+
 ## Licence and third-party components
 
 The contents of this repository, the application code, the Unraid templates

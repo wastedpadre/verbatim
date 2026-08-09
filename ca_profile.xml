@@ -14,6 +14,10 @@
     actually says; this transcribes the dub itself using faster-whisper on
     your GPU. Runs entirely on your server, with batch queueing, a Sonarr
     webhook, a playback preview and a caption editor.
+
+    Maintained by wastedpadre, who is mrskc303 on the Unraid forums.
+    Questions and bug reports are welcome on GitHub, and forum DMs reach me
+    too: https://forums.unraid.net/profile/174026-mrskc303/
   </Profile>
   <Icon>https://raw.githubusercontent.com/wastedpadre/verbatim/main/frontend/public/icon-192.png</Icon>
   <WebPage>https://github.com/wastedpadre/verbatim</WebPage>
