@@ -33,14 +33,17 @@ EDITABLE = {
                    "as fast for a small accuracy cost; medium.en and below are "
                    "faster still and fine on clean dubs."),
     "COMPUTE_TYPE": (str, "model", "Precision",
-                     "float16 uses ~4.7 GB of VRAM for large-v3. int8_float16 "
-                     "roughly halves that — use it on an 8 GB card, or one shared "
-                     "with Plex or Jellyfin hardware transcoding."),
+                     "float16 uses ~4.7 GB of VRAM for large-v3 and works on every "
+                     "card. int8_float16 roughly halves that on an 8 GB card — but "
+                     "not on an RTX 50-series, where int8 has no cuBLAS path and "
+                     "every job fails."),
 
     "POLISH_ENABLED": (bool, "polish", "Repair misheard words",
                        "Sends cue text to the provider below. Roughly 2 cents an episode."),
     "POLISH_PROVIDER": (str, "polish", "Provider",
-                        "Which vendor runs the pass. Each keeps its own key and model below."),
+                        "Which vendor runs the pass. Each keeps its own key and "
+                        "model below. Gemini is the best-worn path; hit Test "
+                        "connection after switching to either of the others."),
     "GEMINI_API_KEY": (str, "polish", "Gemini API key",
                        "From aistudio.google.com. Stored on your server, never sent anywhere else."),
     "POLISH_MODEL": (str, "polish", "Gemini model",

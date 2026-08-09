@@ -159,6 +159,12 @@ pointing at the wrong API.
 | `openai` | platform.openai.com/api-keys | `gpt-4.1-mini` |
 | `anthropic` | console.anthropic.com | `claude-opus-5` |
 
+Gemini is the path with real mileage on it. The OpenAI and Anthropic adapters
+are built to each vendor's documented request shape and their error handling
+is exercised, but they have had far less real-world use — run **Test
+connection** after setting a key, and please open an issue if a provider
+misbehaves rather than assuming it's your key.
+
 The task is constrained substitution, not reasoning, so the cheapest model in a
 family is usually enough — `claude-haiku-4-5` instead of Opus, a mini-class
 model on OpenAI. **Test connection** sends one throwaway prompt so a bad key or

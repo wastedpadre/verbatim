@@ -111,7 +111,7 @@
           Type="Variable" Display="always" Required="false" Mask="false">large-v3</Config>
 
   <Config Name="Compute Type" Target="COMPUTE_TYPE" Default="float16"
-          Description="float16 is standard. Use int8_float16 (~2.6 GB) on an 8 GB card shared with GPU transcoding."
+          Description="float16 is standard and works everywhere. int8_float16 roughly halves VRAM (~2.6 GB) on an 8 GB card shared with GPU transcoding — but NOT on RTX 50-series: Blackwell has no int8 cuBLAS path and jobs fail with CUBLAS_STATUS_NOT_SUPPORTED. Stay on float16 there."
           Type="Variable" Display="advanced" Required="false" Mask="false">float16</Config>
 
   <Config Name="Device" Target="DEVICE" Default="cuda"
