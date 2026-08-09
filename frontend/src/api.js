@@ -47,6 +47,48 @@ export const saveCues = (id, cues, rewrap = false) =>
     body: JSON.stringify({ cues, rewrap }),
   }).then(json);
 
+/**
+ * Subscribe to the server log. Returns an unsubscribe function.
+ *
+ * The cursor is tracked here rather than in the component so a dropped
+ * connection resumes where it left off instead of replaying the buffer.
+ */
+export function subscribeLogs(onLines, onError) {
+  let cursor = 0;
+  let es;
+  let closed = false;
+
+  const open = () => {
+    if (closed) return;
+    es = new EventSource(`/api/logs/stream?after=${cursor}`);
+    es.onmessage = (e) => {
+      try {
+        const batch = JSON.parse(e.data);
+        if (batch.length) {
+          cursor = batch[batch.length - 1].seq;
+          onLines(batch);
+        }
+      } catch {
+        /* keepalive comment frames land here; ignore */
+      }
+    };
+    es.onerror = () => {
+      onError?.();
+      // EventSource retries on its own, but it would reconnect to the
+      // original URL and replay from the old cursor. Reopen with the
+      // current one instead.
+      es.close();
+      if (!closed) setTimeout(open, 2000);
+    };
+  };
+
+  open();
+  return () => {
+    closed = true;
+    es?.close();
+  };
+}
+
 /** Subscribe to queue state. Returns an unsubscribe function. */
 export function subscribe(onData, onError) {
   const es = new EventSource("/api/stream");

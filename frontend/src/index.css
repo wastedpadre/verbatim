@@ -957,6 +957,27 @@ button { cursor: pointer; border: none; background: none; }
   cursor: pointer;
 }
 
+/* Restart-required callout. Amber is the caption accent and is otherwise
+   reserved for caption content, but this is the one setting whose effect is
+   delayed -- worth the exception over letting it read like every other row. */
+.set-warn {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--caption);
+  border-radius: var(--r-sm);
+  background: rgba(255, 216, 77, 0.04);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--dim);
+}
+.set-warn strong { color: var(--text); font-weight: 600; }
+.set-warn code, .set-footnote code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--caption);
+}
+
 .set-tools {
   margin-top: 16px;
   padding-top: 14px;
@@ -1087,6 +1108,52 @@ a.chip-btn { text-decoration: none; display: inline-flex; align-items: center; }
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--caption);
+}
+
+/* ---------------------------------------------------------------- log panel */
+
+.logs {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  overflow: hidden;
+}
+.logs-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.logs-head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.logs-actions { margin-left: auto; display: flex; gap: 7px; }
+
+.logs-box {
+  height: 260px;
+  overflow-y: auto;
+  padding: 10px 14px;
+  background: var(--void);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.logs-empty { color: var(--dimmer); font-family: var(--font-ui); font-size: 12.5px; }
+
+.logline {
+  color: var(--dim);
+  white-space: pre-wrap;
+  /* Wrapped continuations indent, so a long traceback stays readable as one
+     entry instead of merging into the next line. */
+  padding-left: 14px;
+  text-indent: -14px;
+}
+.logline.lv-warning { color: var(--caption); }
+.logline.lv-error, .logline.lv-critical { color: var(--bad); }
+
+.chip-btn.on {
+  color: var(--text);
+  border-color: var(--dim);
+  background: var(--raise);
 }
 
 /* -------------------------------------------------------------------- footer */

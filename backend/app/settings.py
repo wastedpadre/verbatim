@@ -5,10 +5,14 @@ to /config/settings.json and layered on top at startup, so it survives a
 container recreate — which matters, because `--env-file` is only read when a
 container is created, making every toggle a rebuild-and-recreate cycle.
 
-Only settings that are genuinely re-read per job are exposed. Things like
-MODEL_SIZE or DEVICE are bound when the model loads, so changing them at
-runtime would silently do nothing until a restart; those stay env-only rather
-than pretending to work.
+Most settings here are re-read per job, so they take effect immediately. The
+few that aren't — MODEL_SIZE and COMPUTE_TYPE, which are bound when the model
+loads — are listed in RESTART_REQUIRED and flagged to the UI, so it can say
+"on next start" rather than implying a change that hasn't happened yet.
+
+DEVICE stays env-only on purpose: the only reason to move off cuda is to test
+on CPU, which is roughly ten times slower, and putting that one click away in
+a web UI invites a very confusing bug report.
 """
 import json
 import logging
@@ -24,6 +28,15 @@ _lock = threading.Lock()
 
 # name -> (type, group, label, hint)
 EDITABLE = {
+    "MODEL_SIZE": (str, "model", "Speech model",
+                   "large-v3 is the most accurate. distil-large-v3 is about twice "
+                   "as fast for a small accuracy cost; medium.en and below are "
+                   "faster still and fine on clean dubs."),
+    "COMPUTE_TYPE": (str, "model", "Precision",
+                     "float16 uses ~4.7 GB of VRAM for large-v3. int8_float16 "
+                     "roughly halves that — use it on an 8 GB card, or one shared "
+                     "with Plex or Jellyfin hardware transcoding."),
+
     "POLISH_ENABLED": (bool, "polish", "Repair misheard words",
                        "Sends cue text to the provider below. Roughly 2 cents an episode."),
     "POLISH_PROVIDER": (str, "polish", "Provider",
@@ -92,10 +105,26 @@ EDITABLE = {
 
 SECRETS = {"GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "SONARR_TOKEN"}
 
+# Bound when the model loads rather than read per job, so a change here is
+# saved and applied at the next container start. Flagged to the UI so it can
+# say that instead of the usual "applies to the next job".
+RESTART_REQUIRED = {"MODEL_SIZE", "COMPUTE_TYPE"}
+
 # Fields the UI should render as a picker rather than a free text box.
-CHOICES = {"POLISH_PROVIDER": list(config.PROVIDERS)}
+CHOICES = {
+    "POLISH_PROVIDER": list(config.PROVIDERS),
+    # faster-whisper accepts more than this, but these are the ones worth
+    # choosing between; anything exotic can still go in .env.
+    "MODEL_SIZE": ["large-v3", "distil-large-v3", "medium.en", "medium",
+                   "small.en", "small", "base.en", "tiny.en"],
+    "COMPUTE_TYPE": ["float16", "int8_float16", "int8", "float32"],
+}
 
 GROUPS = [
+    ("model", "Speech model",
+     "What gets loaded onto the GPU. Unlike everything else here, these are "
+     "bound when the model loads, so a change is saved now and takes effect "
+     "when the container next starts."),
     ("polish", "Word repair",
      "Fixes words the decoder misheard but which are wrong in context. "
      "Optional, off by default, and the only feature that sends anything off your server."),
@@ -194,7 +223,8 @@ def schema() -> list[dict]:
     for key, title, blurb in GROUPS:
         fields = [
             {"name": n, "type": t.__name__, "label": lbl, "hint": hint,
-             "secret": n in SECRETS, "choices": CHOICES.get(n)}
+             "secret": n in SECRETS, "choices": CHOICES.get(n),
+             "restart": n in RESTART_REQUIRED}
             for n, (t, g, lbl, hint) in EDITABLE.items() if g == key
         ]
         out.append({"key": key, "title": title, "blurb": blurb, "fields": fields})

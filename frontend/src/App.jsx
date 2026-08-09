@@ -3,6 +3,7 @@ import GenerationStatus from "./components/CaptionBay";
 import CaptionPlayer from "./components/CaptionPlayer";
 import CueEditor from "./components/CueEditor";
 import Library from "./components/Library";
+import LogPanel from "./components/LogPanel";
 import Queue from "./components/Queue";
 import Settings from "./components/Settings";
 import Tip from "./components/Tip";
@@ -28,6 +29,7 @@ export default function App() {
   const [editing, setEditing] = useState(null);
   const [previewing, setPreviewing] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logsOpen, setLogsOpen] = useState(false);
 
   useEffect(() => {
     health().then(setInfo).catch(() => setInfo(null));
@@ -79,7 +81,7 @@ export default function App() {
         <div className="chips">
           {info && (
             <>
-              <Tip text="The speech model this container loaded at startup. Changing it means editing .env and recreating the container.">
+              <Tip text="The speech model this container loaded at startup. Change it under Settings → Speech model; it applies the next time the container starts.">
                 <span className="chip mono">
                   model <strong>{info.model}</strong>
                 </span>
@@ -109,7 +111,16 @@ export default function App() {
               {connected ? "live" : "reconnecting"}
             </span>
           </Tip>
-          <Tip text="Word repair, VAD tuning, caption shape and the Sonarr webhook. Applies to the next job — no restart.">
+          <Tip text="Live server log — which audio track was picked, what the pipeline is doing, and why anything failed. Same output as docker logs.">
+            <button
+              className={`chip chip-btn ${logsOpen ? "on" : ""}`}
+              onClick={() => setLogsOpen((v) => !v)}
+              aria-pressed={logsOpen}
+            >
+              {logsOpen ? "Hide logs" : "Show logs"}
+            </button>
+          </Tip>
+          <Tip text="Speech model, word repair, VAD tuning, caption shape and the Sonarr webhook.">
             <button className="chip chip-btn" onClick={() => setSettingsOpen(true)}>
               Settings
             </button>
@@ -138,6 +149,8 @@ export default function App() {
           onPreview={setPreviewing}
         />
       </div>
+
+      {logsOpen && <LogPanel onClose={() => setLogsOpen(false)} />}
 
       <footer className="sitefoot">
         <span>

@@ -40,6 +40,9 @@ boundaries rather than mid-phrase.
 captions** on any finished job to fix what's left — with the tool built around
 the failure mode that actually happens.
 
+**A live log.** **Show logs** in the top bar streams the server log into the
+page, so diagnosing a bad run doesn't mean opening a terminal.
+
 ---
 
 ## The caption editor
@@ -170,9 +173,15 @@ original cues.
 
 ## Tuning
 
-Everything lives in `.env`. Anything that's re-read per job is also editable
-live under **Settings**, including the VAD parameters below — those apply to
-the next job with no restart and no rebuild.
+Everything lives in `.env`, and almost all of it is also editable under
+**Settings** — including the VAD parameters, which apply to the next job with
+no restart and no rebuild.
+
+Two exceptions are marked in the UI: **speech model** and **precision** are
+bound when the model loads, so changing them there is saved immediately and
+takes effect the next time the container starts. Settings written in the UI
+land in `/config/settings.json` and are layered over `.env` at startup, so a
+value set in the UI wins over the same variable in `.env` from then on.
 
 | Variable | Do this if… |
 |---|---|
@@ -216,8 +225,21 @@ off, it's likely a variable-rate issue that needs `ffsubsync` instead.
 there was no glossary. Check the job card: it lists the terms it found. Bitmap
 subtitles (PGS/VobSub) can't be mined without OCR.
 
+**`cuBLAS failed with status CUBLAS_STATUS_NOT_SUPPORTED`** — the precision
+isn't supported on your card. Blackwell (RTX 50-series) has no int8 cuBLAS
+path in this `ctranslate2` build, and the library advertises one anyway, so
+`int8_float16` fails at the first matmul. Set precision to `float16` under
+**Settings → Speech model** and restart. The app translates this error into
+that instruction rather than surfacing the raw cuBLAS text.
+
 **Nothing survived cleanup** — almost always the wrong audio track, or a track
 that's pure music.
+
+**Anything else** — hit **Show logs** in the top bar. It streams the same
+output as `docker logs`, including `faster_whisper`'s own lines: which audio
+track was chosen, and how much audio VAD removed. That second number is the
+one to tune `VAD_THRESHOLD` against — if it's eating whole seconds of a
+dialogue-heavy scene, lower the threshold.
 
 ---
 

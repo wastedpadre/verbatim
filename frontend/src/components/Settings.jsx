@@ -141,6 +141,7 @@ export default function Settings({ onClose }) {
   const [notice, setNotice] = useState(null);
   const [test, setTest] = useState(null);
   const [models, setModels] = useState(null);
+  const [touched, setTouched] = useState(() => new Set());
 
   useEffect(() => {
     getSettings()
@@ -156,6 +157,7 @@ export default function Settings({ onClose }) {
   const change = useCallback((name, v) => {
     setValues((prev) => ({ ...prev, [name]: v }));
     setDirty(true);
+    setTouched((prev) => new Set(prev).add(name));
     // A model list or a connection result belongs to the provider it came
     // from; leaving either on screen after a switch reads as a live status
     // for the new one.
@@ -165,6 +167,12 @@ export default function Settings({ onClose }) {
     }
   }, []);
 
+  /** Names of restart-class fields the user has edited but not yet saved. */
+  const pendingRestart = (schema || [])
+    .flatMap((g) => g.fields)
+    .filter((f) => f.restart && touched.has(f.name))
+    .map((f) => f.label);
+
   const save = async () => {
     setBusy(true);
     setNotice(null);
@@ -172,7 +180,19 @@ export default function Settings({ onClose }) {
       const res = await saveSettings(values);
       setValues(res.values);
       setDirty(false);
-      setNotice({ text: "Saved. Applies to the next job." });
+      // Saying "applies to the next job" after a model change would be
+      // wrong, and wrong in the direction that wastes a whole episode
+      // before anyone notices.
+      setNotice(
+        pendingRestart.length
+          ? {
+              text: `Saved. ${pendingRestart.join(" and ")} ` +
+                `${pendingRestart.length > 1 ? "take" : "takes"} effect when the ` +
+                `container next starts — everything else applies to the next job.`,
+            }
+          : { text: "Saved. Applies to the next job." }
+      );
+      setTouched(new Set());
     } catch (e) {
       setNotice({ bad: true, text: e.message });
     } finally {
@@ -258,6 +278,18 @@ export default function Settings({ onClose }) {
                 <Field key={f.name} field={f} value={values[f.name]} onChange={change} />
               ))}
 
+            {group.key === "model" && (
+              <p className="set-warn">
+                <strong>Takes effect on the next container start</strong>, not the
+                next job — the model is loaded once at startup and held in VRAM.
+                Restart the container from the Docker tab, or{" "}
+                <code>docker compose restart</code>. Switching to a model you
+                haven't used before downloads it first (about 3 GB for large-v3),
+                so that first job is slow; it's cached in <code>/config</code>{" "}
+                after that.
+              </p>
+            )}
+
             {group.key === "sonarr" && <SonarrHook token={values.SONARR_TOKEN} />}
 
             {group.key === "polish" && (
@@ -304,9 +336,13 @@ export default function Settings({ onClose }) {
         ))}
 
         <p className="set-footnote">
-          Model size, device and paths are read once when the container starts,
-          so they stay in your .env rather than appearing here where changing
-          them would look like it worked without actually taking effect.
+          Everything here is written to <code>/config/settings.json</code> and
+          layered over your <code>.env</code> at startup, so it survives a
+          container recreate — and so a value set here wins over the same
+          variable in <code>.env</code> from then on. Paths and{" "}
+          <code>DEVICE</code> stay env-only: the mounts can't change without
+          recreating the container anyway, and the only reason to leave{" "}
+          <code>cuda</code> is a CPU test that runs about ten times slower.
         </p>
       </div>
     </div>

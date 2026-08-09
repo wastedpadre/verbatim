@@ -12,11 +12,14 @@ from pydantic import BaseModel
 
 from concurrent.futures import ThreadPoolExecutor
 
-from . import config, db, settings
+from . import config, db, logbuffer, settings
 from .pipeline import probe, providers, runner, segment, srt
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"),
-                    format="%(asctime)s %(levelname)s %(name)s %(message)s")
+LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"), format=LOG_FORMAT)
+# Mirror the console stream into memory so /api/logs can serve it. Installed
+# at import time rather than in lifespan so startup lines are captured too.
+logbuffer.install(LOG_FORMAT)
 log = logging.getLogger("verbatim")
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -305,6 +308,35 @@ async def stream(request: Request):
             else:
                 yield ": ping\n\n"
             await asyncio.sleep(0.5)
+
+    return StreamingResponse(gen(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+        "Connection": "keep-alive",
+    })
+
+
+# ------------------------------------------------------------------- logs
+
+@app.get("/api/logs/stream")
+async def log_stream(request: Request, after: int = 0):
+    """Server-sent log lines, newest last.
+
+    `after` is a cursor from a previous batch; 0 replays whatever is still
+    buffered, which is what a freshly opened panel wants.
+    """
+    async def gen():
+        cursor = after
+        while True:
+            if await request.is_disconnected():
+                break
+            lines, cursor = logbuffer.since(cursor)
+            if lines:
+                yield f"data: {json.dumps(lines)}\n\n"
+            else:
+                # Comment frames keep proxies from closing an idle stream.
+                yield ": ping\n\n"
+            await asyncio.sleep(1.0)
 
     return StreamingResponse(gen(), media_type="text/event-stream", headers={
         "Cache-Control": "no-cache",

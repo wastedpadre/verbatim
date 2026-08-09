@@ -30,11 +30,37 @@ def get_model() -> WhisperModel:
         return _model
 
 
+# ctranslate2 reports int8 compute types as available on cards whose cuBLAS
+# has no int8 GEMM path -- get_supported_compute_types("cuda") lists
+# int8_float16 on Blackwell, then the first matmul dies. There is no cheap way
+# to detect that up front, so translate the error instead of preflighting it.
+_CUBLAS_HINT = (
+    "Your GPU cannot run the {ct} precision (cuBLAS has no int8 path for it, "
+    "even though the library advertises one). Set precision to float16 under "
+    "Settings -> Speech model and restart the container."
+)
+
+
+def _explain_cuda(exc: Exception) -> Exception:
+    text = str(exc)
+    if "CUBLAS" in text.upper() and "int8" in config.COMPUTE_TYPE:
+        return RuntimeError(_CUBLAS_HINT.format(ct=config.COMPUTE_TYPE))
+    return exc
+
+
 def transcribe(audio_path: Path, prompt: str, on_progress=None) -> list[dict]:
     """Yield word-timed segments. on_progress(seconds_done, text) is called
     as each segment decodes so the UI can show live output."""
-    model = get_model()
+    # faster-whisper returns a generator, so the encoder — and the matmul
+    # that fails on an unsupported precision — runs during iteration, not on
+    # the call. The whole thing has to be inside the try.
+    try:
+        return _run(get_model(), audio_path, prompt, on_progress)
+    except Exception as exc:  # noqa: BLE001 - ctranslate2 raises bare RuntimeError
+        raise _explain_cuda(exc) from exc
 
+
+def _run(model, audio_path: Path, prompt: str, on_progress) -> list[dict]:
     segments, info = model.transcribe(
         str(audio_path),
         language="en",
