@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Tip from "./Tip";
 import { getSettings, listPolishModels, saveSettings, testPolish } from "../api";
 
@@ -16,6 +16,77 @@ const MODEL_FIELD = {
   openai: "OPENAI_MODEL",
   anthropic: "ANTHROPIC_MODEL",
 };
+
+/**
+ * Model picker: a dropdown that stays open-ended.
+ *
+ * A hardcoded list would go stale — vendors retire model IDs constantly,
+ * which is the whole reason "List available models" exists. So the options
+ * are the shipped suggestions merged with whatever that button returned for
+ * this key, plus the current value, plus a Custom escape hatch for anything
+ * neither source knows about.
+ */
+function ModelField({ field, value, onChange, extra }) {
+  const [custom, setCustom] = useState(false);
+
+  const options = useMemo(() => {
+    const seen = new Set([...(extra || []), ...(field.suggestions || [])]);
+    // Keep whatever is saved selectable even when the vendor no longer
+    // lists it — otherwise opening Settings silently reassigns the model.
+    if (value) seen.add(value);
+    return [...seen];
+  }, [extra, field.suggestions, value]);
+
+  const labelCell = (
+    <span className="set-label">
+      {field.label}
+      <span className="set-hint">{field.hint}</span>
+    </span>
+  );
+
+  if (custom) {
+    return (
+      <label className="set-row">
+        {labelCell}
+        <span className="field-stack">
+          <input
+            className="field"
+            type="text"
+            autoFocus
+            value={value ?? ""}
+            placeholder="model id"
+            onChange={(e) => onChange(field.name, e.target.value)}
+          />
+          <button className="mini" onClick={() => setCustom(false)}>
+            Back to list
+          </button>
+        </span>
+      </label>
+    );
+  }
+
+  return (
+    <label className="set-row">
+      {labelCell}
+      <select
+        className="field"
+        value={value ?? ""}
+        onChange={(e) =>
+          e.target.value === "__custom__"
+            ? setCustom(true)
+            : onChange(field.name, e.target.value)
+        }
+      >
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+        <option value="__custom__">Custom…</option>
+      </select>
+    </label>
+  );
+}
 
 function Field({ field, value, onChange }) {
   const { name, type, label, hint, secret, choices } = field;
@@ -274,9 +345,21 @@ export default function Settings({ onClose }) {
                   !ALL_PROVIDER_FIELDS.includes(f.name) ||
                   (PROVIDER_FIELDS[provider] || []).includes(f.name)
               )
-              .map((f) => (
-                <Field key={f.name} field={f} value={values[f.name]} onChange={change} />
-              ))}
+              .map((f) =>
+                f.suggestions ? (
+                  <ModelField
+                    key={f.name}
+                    field={f}
+                    value={values[f.name]}
+                    onChange={change}
+                    // Only the selected provider's model field gets the
+                    // fetched list; the others' options would be wrong.
+                    extra={f.name === MODEL_FIELD[provider] ? models : null}
+                  />
+                ) : (
+                  <Field key={f.name} field={f} value={values[f.name]} onChange={change} />
+                )
+              )}
 
             {group.key === "model" && (
               <p className="set-warn">
@@ -299,9 +382,9 @@ export default function Settings({ onClose }) {
                     Test connection
                   </button>
                 </Tip>
-                <Tip text="Asks the provider which models this key can actually call. Beats guessing an ID that may have been retired.">
+                <Tip text="Asks the provider which models this key can actually call, and adds them to the model dropdown above.">
                   <button className="btn ghost" onClick={loadModels} disabled={busy}>
-                    List available models
+                    Refresh model list
                   </button>
                 </Tip>
 
@@ -313,22 +396,11 @@ export default function Settings({ onClose }) {
                 )}
 
                 {models && (
-                  <div className="model-list">
-                    <span className="set-hint">
-                      Models your {provider} key can call. Click one to use it.
-                    </span>
-                    <div className="terms">
-                      {models.map((m) => (
-                        <button
-                          key={m}
-                          className="term"
-                          onClick={() => change(MODEL_FIELD[provider], m)}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <p className="notice">
+                    {models.length} model{models.length === 1 ? "" : "s"} your{" "}
+                    {provider} key can call {models.length === 1 ? "is" : "are"}{" "}
+                    now in the dropdown above.
+                  </p>
                 )}
               </div>
             )}

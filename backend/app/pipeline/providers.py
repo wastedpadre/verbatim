@@ -128,26 +128,6 @@ def _gemini_complete(prompt: str) -> list[dict]:
         return []
 
 
-def _gemini_test() -> tuple[bool, str]:
-    r = requests.post(
-        f"{GEMINI_ENDPOINT}/{config.POLISH_MODEL}:generateContent",
-        params={"key": config.GEMINI_API_KEY},
-        json={"contents": [{"parts": [{"text": "Reply with: OK"}]}]},
-        timeout=25,
-    )
-    if r.status_code == 200:
-        return True, f"{config.POLISH_MODEL} responded normally."
-    try:
-        msg = r.json().get("error", {}).get("message", r.text[:200])
-    except ValueError:
-        msg = r.text[:200]
-    if r.status_code == 404:
-        return False, f"Model not available. {msg}"
-    if r.status_code in (400, 401, 403):
-        return False, f"Key rejected. {msg}"
-    return False, f"HTTP {r.status_code}. {msg}"
-
-
 def _gemini_models() -> list[str]:
     r = requests.get(GEMINI_ENDPOINT,
                      params={"key": config.GEMINI_API_KEY}, timeout=25)
@@ -194,17 +174,6 @@ def _openai_complete(prompt: str) -> list[dict]:
     return _parse(resp.choices[0].message.content or "")
 
 
-def _openai_test() -> tuple[bool, str]:
-    # No max_tokens: the reasoning models renamed it to max_completion_tokens
-    # and reject the old spelling, and a five-word reply needs no cap anyway.
-    resp = _openai_client().chat.completions.create(
-        model=config.OPENAI_MODEL,
-        messages=[{"role": "user", "content": "Reply with: OK"}],
-    )
-    said = (resp.choices[0].message.content or "").strip()
-    return True, f"{config.OPENAI_MODEL} responded: {said!r}"
-
-
 def _openai_models() -> list[str]:
     names = sorted(m.id for m in _openai_client().models.list())
     # Chat models only -- the key can also see embeddings, audio and image
@@ -220,25 +189,67 @@ def _anthropic_client():
     return anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY, timeout=90.0)
 
 
+# Whether a given Claude model accepts the thinking/effort controls. Learned
+# at runtime rather than hardcoded: the split is by model generation, and a
+# static list would mislabel every model released after this code was written.
+_anthropic_controls: dict[str, bool] = {}
+
+
+def _anthropic_unsupported_controls(exc: Exception) -> bool:
+    """True when a 400 is complaining about thinking or effort specifically."""
+    text = str(exc).lower()
+    return "400" in text and ("thinking" in text or "effort" in text)
+
+
+def _anthropic_send(model: str, prompt: str, controls: bool, max_tokens: int):
+    """One request. `controls` adds the current-generation-only parameters.
+
+    No temperature either way: current models reject sampling parameters
+    outright, so sending temperature=0 for parity with the other two
+    providers would be a 400 on every window.
+    """
+    kwargs = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": prompt}],
+        # Structured output is supported across every model worth using
+        # here, so the JSON shape is guaranteed on both paths.
+        "output_config": {"format": {"type": "json_schema",
+                                     "schema": CHANGES_SCHEMA}},
+    }
+    if controls:
+        # Thinking stays on at low effort rather than disabled: disabling it
+        # is the documented cause of <thinking> tags leaking into the visible
+        # response, and this response is parsed as JSON, so a leaked tag
+        # costs the whole window.
+        kwargs["thinking"] = {"type": "adaptive"}
+        kwargs["output_config"]["effort"] = "low"
+    return _anthropic_client().messages.create(**kwargs)
+
+
+def _anthropic_call(prompt: str, max_tokens: int):
+    """Send, and on a controls-related 400 retry once without them.
+
+    Haiku 4.5 and older reject `thinking` and `effort`; the current
+    generation wants them, because otherwise thinking defaults on at high
+    effort and this task pays for reasoning it does not need. Trying the
+    modern shape first and remembering the answer gets both right without a
+    model list to maintain.
+    """
+    model = config.ANTHROPIC_MODEL
+    controls = _anthropic_controls.get(model, True)
+    try:
+        return _anthropic_send(model, prompt, controls, max_tokens)
+    except Exception as exc:  # noqa: BLE001 - narrowed immediately below
+        if not (controls and _anthropic_unsupported_controls(exc)):
+            raise
+        log.info("polish: %s rejects thinking/effort, retrying without", model)
+        _anthropic_controls[model] = False
+        return _anthropic_send(model, prompt, False, max_tokens)
+
+
 def _anthropic_complete(prompt: str) -> list[dict]:
-    # No temperature: current Claude models reject sampling parameters
-    # outright, so sending temperature=0 for parity with the other two
-    # providers would be a 400 on every window.
-    #
-    # Thinking is left on at low effort rather than disabled. Disabling it
-    # is the documented cause of <thinking> tags leaking into the visible
-    # response, and this response is parsed as JSON -- a leaked tag is a
-    # dropped window.
-    resp = _anthropic_client().messages.create(
-        model=config.ANTHROPIC_MODEL,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        output_config={
-            "effort": "low",
-            "format": {"type": "json_schema", "schema": CHANGES_SCHEMA},
-        },
-        messages=[{"role": "user", "content": prompt}],
-    )
+    resp = _anthropic_call(prompt, 16000)
     # Safety classifiers answer with HTTP 200 and an empty content list, so
     # indexing content[0] unconditionally would raise on a refusal.
     if resp.stop_reason == "refusal":
@@ -248,18 +259,6 @@ def _anthropic_complete(prompt: str) -> list[dict]:
     return _parse(text)
 
 
-def _anthropic_test() -> tuple[bool, str]:
-    resp = _anthropic_client().messages.create(
-        model=config.ANTHROPIC_MODEL,
-        max_tokens=16,
-        messages=[{"role": "user", "content": "Reply with: OK"}],
-    )
-    if resp.stop_reason == "refusal":
-        return False, "The model declined a trivial prompt -- check the key's workspace."
-    said = "".join(b.text for b in resp.content if b.type == "text").strip()
-    return True, f"{config.ANTHROPIC_MODEL} responded: {said!r}"
-
-
 def _anthropic_models() -> list[str]:
     return [m.id for m in _anthropic_client().models.list()]
 
@@ -267,10 +266,20 @@ def _anthropic_models() -> list[str]:
 # --------------------------------------------------------------- dispatch
 
 _PROVIDERS = {
-    "gemini": (_gemini_complete, _gemini_test, _gemini_models),
-    "openai": (_openai_complete, _openai_test, _openai_models),
-    "anthropic": (_anthropic_complete, _anthropic_test, _anthropic_models),
+    "gemini": (_gemini_complete, _gemini_models),
+    "openai": (_openai_complete, _openai_models),
+    "anthropic": (_anthropic_complete, _anthropic_models),
 }
+
+# Deliberately shaped like a real window so the connection check exercises
+# the real request. A bare "reply with OK" probe passed against a model that
+# then 400'd on the first actual job: a green check that doesn't cover the
+# path it claims to check is worse than no check at all.
+TEST_PROMPT = (
+    "This is a connection test, not a transcript. Make no changes.\n"
+    + ENVELOPE
+    + "\nLines:\n0: The quick brown fox jumps over the lazy dog."
+)
 
 # Where each vendor issues keys, so the Settings hint can point somewhere.
 KEY_SOURCES = {
@@ -304,16 +313,22 @@ def complete(prompt: str) -> list[dict]:
 def test() -> tuple[bool, str]:
     """Live connection check. Returns (ok, human-readable detail).
 
-    Model IDs get retired regularly and a stale one fails with a 404 only
-    once a job reaches the polish stage, minutes in. This surfaces it in a
-    couple of seconds instead.
+    Runs the same function a real window runs, so a stale model ID, a
+    rejected key or an unsupported parameter surfaces here in a couple of
+    seconds instead of minutes into a job.
     """
     if not config.polish_key():
         return False, f"No {config.POLISH_PROVIDER} API key set."
     try:
-        return _pick(1)()
+        _pick(0)(TEST_PROMPT)
     except Exception as exc:  # noqa: BLE001
         return False, _explain(exc)
+
+    note = ""
+    if (config.POLISH_PROVIDER == "anthropic"
+            and not _anthropic_controls.get(config.ANTHROPIC_MODEL, True)):
+        note = " (this model predates thinking/effort, so those were dropped)"
+    return True, f"{config.polish_model()} accepted a real polish request{note}."
 
 
 def models() -> list[str]:
@@ -321,7 +336,7 @@ def models() -> list[str]:
     if not config.polish_key():
         raise ProviderError(f"No {config.POLISH_PROVIDER} API key set.")
     try:
-        return _pick(2)()
+        return _pick(1)()
     except ProviderError:
         raise
     except Exception as exc:  # noqa: BLE001

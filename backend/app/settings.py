@@ -113,6 +113,18 @@ SECRETS = {"GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "SONARR_TOKE
 # say that instead of the usual "applies to the next job".
 RESTART_REQUIRED = {"MODEL_SIZE", "COMPUTE_TYPE"}
 
+# Dropdown seeds for fields that must stay open-ended. Unlike CHOICES these
+# are NOT validated: vendors add and retire model IDs constantly, so the list
+# is a starting point merged with whatever "List available models" returns,
+# and a custom ID typed in the UI still saves.
+SUGGESTIONS = {
+    "ANTHROPIC_MODEL": ["claude-haiku-4-5", "claude-sonnet-5",
+                        "claude-opus-4-8", "claude-opus-5"],
+    "OPENAI_MODEL": ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"],
+    "POLISH_MODEL": ["gemini-flash-latest", "gemini-3.6-flash",
+                     "gemini-3.5-flash-lite"],
+}
+
 # Fields the UI should render as a picker rather than a free text box.
 CHOICES = {
     "POLISH_PROVIDER": list(config.PROVIDERS),
@@ -227,6 +239,7 @@ def schema() -> list[dict]:
         fields = [
             {"name": n, "type": t.__name__, "label": lbl, "hint": hint,
              "secret": n in SECRETS, "choices": CHOICES.get(n),
+             "suggestions": SUGGESTIONS.get(n),
              "restart": n in RESTART_REQUIRED}
             for n, (t, g, lbl, hint) in EDITABLE.items() if g == key
         ]
