@@ -1,0 +1,18 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+python-multipart==0.0.20
+
+# faster-whisper rides on CTranslate2. The pairing below expects cuDNN 9,
+# which is what the nvidia/cuda:12.4.x-cudnn-runtime base image ships.
+# If you swap the base image, these two pins are what to re-check.
+faster-whisper==1.1.1
+ctranslate2==4.5.0
+
+# huggingface_hub 1.0 migrated from `requests` to `httpx` and dropped the
+# `requests` dependency. faster-whisper 1.1.1 still does `import requests`
+# directly and expects the pre-1.0 hub API, so pin below 1.0 and bring
+# requests in explicitly. Without these two lines the container crash-loops
+# on startup with ModuleNotFoundError: No module named 'requests'.
+requests>=2.32.0
+huggingface_hub>=0.24,<1.0

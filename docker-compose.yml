@@ -1,0 +1,53 @@
+services:
+  verbatim:
+    build: .
+    image: verbatim:latest
+    container_name: verbatim
+    restart: unless-stopped
+
+    ports:
+      - "842:8080"
+
+    env_file: .env
+
+    # ---- GPU (Unraid) ------------------------------------------------------
+    # Unraid's Nvidia Driver plugin installs the container toolkit and expects
+    # this style. The `deploy: resources:` block used elsewhere in the Docker
+    # world often no-ops here and silently falls back to CPU, which looks like
+    # "it works, but takes 40 minutes an episode".
+    runtime: nvidia
+    environment:
+      # `all` hands over every card and needs no editing. To pin one, put its
+      # UUID from Settings -> Nvidia Driver here instead.
+      - NVIDIA_VISIBLE_DEVICES=all
+      # REQUIRED and easy to miss. Transcoding templates (Plex, Jellyfin) get
+      # away with the default because they only need video+utility. CUDA
+      # compute is NOT exposed unless `compute` is listed here, and the
+      # failure is silent: the container starts, sees no CUDA device, and
+      # quietly runs on CPU.
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+    volumes:
+      # Left of the colon = path on your Unraid server.
+      #
+      # If you run the TRaSH / hardlink layout, mount the single data root in
+      # BOTH this and Sonarr at the same container path instead:
+      #     - /mnt/user/data:/data
+      # That is what makes the Sonarr webhook work without path translation.
+      - /mnt/user/media/anime:/media
+      - /mnt/user/appdata/verbatim:/config
+
+    # Keep /config on a cache pool (the Unraid default for appdata). On the
+    # array, the SQLite job database does a lot of small writes and crawls.
+
+# ---- Non-Unraid alternative --------------------------------------------------
+# On stock Docker Engine / Docker Desktop, delete the `runtime` and GPU
+# `environment` lines above and use this instead:
+#
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: all
+#               capabilities: [gpu]

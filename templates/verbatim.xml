@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Verbatim</Name>
+
+  <!-- Replace YOUR_GITHUB_USER everywhere below before submitting. CA pulls
+       this image, it never builds from source, so it must be public. -->
+  <Repository>ghcr.io/YOUR_GITHUB_USER/verbatim:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+
+  <Support>https://github.com/YOUR_GITHUB_USER/verbatim/discussions</Support>
+  <Project>https://github.com/YOUR_GITHUB_USER/verbatim</Project>
+  <Icon>https://raw.githubusercontent.com/YOUR_GITHUB_USER/verbatim/main/frontend/public/icon-192.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/YOUR_GITHUB_USER/verbatim/main/templates/verbatim.xml</TemplateURL>
+
+  <Overview>
+    Generates English closed captions from the English dub audio track of your
+    own media.
+
+    Dubtitles are hard to find because almost every "English" subtitle file is
+    a translation of the Japanese audio - the dub script is a different
+    adaptation and rarely matches what is actually spoken. Verbatim
+    transcribes the dub itself using faster-whisper on your GPU.
+
+    Requires the Nvidia Driver plugin from Community Applications and a CUDA
+    capable card with at least 6 GB of VRAM. The transcription model holds
+    roughly 4.7 GB while a job runs, so watch for contention if the same card
+    also does Plex or Jellyfin hardware transcoding.
+
+    Everything runs locally. An optional pass can send cue text to the Gemini
+    API to repair misheard words; it is disabled by default and needs your own
+    API key.
+  </Overview>
+
+  <Description>
+    ### What it does
+
+    Point it at a folder, tick episodes, and it writes a sidecar `.srt` next to
+    each video that Plex and Jellyfin pick up automatically as an English track.
+
+    ### How it gets usable output
+
+    - **Track selection.** Dual-audio releases carry several audio and subtitle
+      streams. Streams are scored on language tags, titles and channel count,
+      and the UI shows which one was chosen.
+    - **Glossary priming.** Character names and invented terminology are mined
+      from the embedded subtitle track and used to bias the decoder, then to
+      correct near-misses afterwards.
+    - **Dialogue-forward audio.** In a 5.1 mix the dialogue sits in the centre
+      channel. A flat downmix buries it under the score, so the centre channel
+      is isolated before transcription.
+    - **Readable cues.** Output is reshaped to broadcast captioning rules:
+      42 characters per line, two lines, 20 characters per second, no overlaps.
+
+    ### Also included
+
+    Batch queueing with a pre-flight that skips episodes already captioned,
+    releases that ship their own dubtitle track, and files with no English
+    audio. A playback preview that plays cues on their real timestamps, a cue
+    editor with validation, and a scoring tool for measuring output against a
+    reference track.
+
+    ### Requirements
+
+    Nvidia Driver plugin, and `--runtime=nvidia` with
+    `NVIDIA_DRIVER_CAPABILITIES=compute,utility`. Without the compute
+    capability the container starts, sees no CUDA device, and silently falls
+    back to CPU at roughly ten times the runtime.
+  </Description>
+
+  <Category>MediaApp:Video Tools:Utilities</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <ExtraParams>--runtime=nvidia</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Nvidia Driver plugin, and a CUDA GPU with 6 GB or more of VRAM.</Requires>
+
+  <Config Name="WebUI Port" Target="8080" Default="8080" Mode="tcp"
+          Description="Port for the Verbatim web interface."
+          Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+
+  <Config Name="Media Library" Target="/media" Default="/mnt/user/media"
+          Mode="rw"
+          Description="Your video library. Needs write access because the .srt is written next to each file."
+          Type="Path" Display="always" Required="true" Mask="false">/mnt/user/media</Config>
+
+  <Config Name="App Data" Target="/config" Default="/mnt/user/appdata/verbatim"
+          Mode="rw"
+          Description="Job database, saved settings, and the speech model (about 3 GB on first run). Keep this on a cache pool."
+          Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/verbatim</Config>
+
+  <Config Name="NVIDIA_VISIBLE_DEVICES" Target="NVIDIA_VISIBLE_DEVICES" Default="all"
+          Description="Use 'all', or paste a specific GPU UUID from Settings -&gt; Nvidia Driver to pin one card."
+          Type="Variable" Display="always" Required="true" Mask="false">all</Config>
+
+  <Config Name="NVIDIA_DRIVER_CAPABILITIES" Target="NVIDIA_DRIVER_CAPABILITIES" Default="compute,utility"
+          Description="Must include 'compute'. Without it the container runs on CPU with no error."
+          Type="Variable" Display="advanced" Required="true" Mask="false">compute,utility</Config>
+
+  <Config Name="Model Size" Target="MODEL_SIZE" Default="large-v3"
+          Description="large-v3 for best accuracy (~4.7 GB VRAM). distil-large-v3 is about twice as fast. medium.en is lighter still."
+          Type="Variable" Display="always" Required="false" Mask="false">large-v3</Config>
+
+  <Config Name="Compute Type" Target="COMPUTE_TYPE" Default="float16"
+          Description="float16 is standard. Use int8_float16 (~2.6 GB) on an 8 GB card shared with GPU transcoding."
+          Type="Variable" Display="advanced" Required="false" Mask="false">float16</Config>
+
+  <Config Name="Device" Target="DEVICE" Default="cuda"
+          Description="cuda or cpu. CPU works but takes roughly ten times as long."
+          Type="Variable" Display="advanced" Required="false" Mask="false">cuda</Config>
+
+  <Config Name="Concurrent Jobs" Target="CONCURRENCY" Default="1"
+          Description="Leave at 1 for a single GPU. Two jobs on one card contend for VRAM and will run out of memory on 8 GB."
+          Type="Variable" Display="advanced" Required="false" Mask="false">1</Config>
+
+  <Config Name="Media Roots" Target="MEDIA_ROOTS" Default="/media"
+          Description="Container-side paths to browse. Comma-separated if you add more volumes."
+          Type="Variable" Display="advanced" Required="false" Mask="false">/media</Config>
+
+  <Config Name="Output Suffix" Target="OUTPUT_SUFFIX" Default=".en.dubtitles.srt"
+          Description="Filename suffix for generated subtitles. Plex and Jellyfin read this as an English track."
+          Type="Variable" Display="advanced" Required="false" Mask="false">.en.dubtitles.srt</Config>
+
+  <Config Name="Speech Sensitivity" Target="VAD_THRESHOLD" Default="0.15"
+          Description="Lower recovers quiet dialogue under music. 0.15 measured best on dub audio; 0.30 lost real lines."
+          Type="Variable" Display="advanced" Required="false" Mask="false">0.15</Config>
+
+  <Config Name="Gemini API Key" Target="GEMINI_API_KEY" Default=""
+          Description="Optional. Enables the pass that repairs misheard words. Can also be set from the app's own Settings page."
+          Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+</Container>
