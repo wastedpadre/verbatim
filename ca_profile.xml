@@ -1,9 +1,21 @@
-<?xml version="1.0"?>
-<!-- Maintainer profile read by the Community Apps submission scanner. -->
-<Profile>
-  <Name>wastedpadre</Name>
-  <DisplayName>wastedpadre</DisplayName>
-  <Repository>https://github.com/wastedpadre/verbatim</Repository>
-  <Support>https://github.com/wastedpadre/verbatim/discussions</Support>
-  <Overview>Self-hosted tools for media libraries.</Overview>
-</Profile>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Maintainer profile read by the Community Applications submission scanner.
+
+  <Profile> is a text section, not a container: CA renders its contents as
+  the repository overview. Author and support details go in the sibling
+  elements below.
+-->
+<CommunityApplications>
+  <Profile>
+    Verbatim generates English closed captions from the English dub audio
+    track of media you already own. Almost every "English" subtitle file is a
+    translation of the Japanese audio, so it does not match what the dub
+    actually says; this transcribes the dub itself using faster-whisper on
+    your GPU. Runs entirely on your server, with batch queueing, a Sonarr
+    webhook, a playback preview and a caption editor.
+  </Profile>
+  <Icon>https://raw.githubusercontent.com/wastedpadre/verbatim/main/frontend/public/icon-192.png</Icon>
+  <WebPage>https://github.com/wastedpadre/verbatim</WebPage>
+  <Forum>https://github.com/wastedpadre/verbatim/discussions</Forum>
+</CommunityApplications>
