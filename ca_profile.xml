@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
-<!-- Maintainer profile read by the Community Apps submission scanner.
-     Replace every YOUR_ placeholder before submitting. -->
+<!-- Maintainer profile read by the Community Apps submission scanner. -->
 <Profile>
-  <Name>YOUR_GITHUB_USER</Name>
+  <Name>wastedpadre</Name>
   <DisplayName>Your Name</DisplayName>
-  <Repository>https://github.com/YOUR_GITHUB_USER/verbatim</Repository>
-  <Support>https://github.com/YOUR_GITHUB_USER/verbatim/discussions</Support>
+  <Repository>https://github.com/wastedpadre/verbatim</Repository>
+  <Support>https://github.com/wastedpadre/verbatim/discussions</Support>
   <Overview>Self-hosted tools for media libraries.</Overview>
 </Profile>

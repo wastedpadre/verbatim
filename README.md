@@ -227,7 +227,7 @@ image has to be published before a template can reference it.
 
 ```bash
 git init && git add . && git commit -m "Verbatim"
-git remote add origin https://github.com/YOUR_USER/verbatim.git
+git remote add origin https://github.com/wastedpadre/verbatim.git
 git push -u origin main
 ```
 
@@ -236,9 +236,10 @@ builds on every push to `main` and pushes to GHCR. After the first successful
 run, go to the package page on GitHub and set its visibility to **public** —
 GHCR packages default to private and CA cannot pull a private image.
 
-**3. Replace the placeholders.** Search for `YOUR_GITHUB_USER` in
-`templates/verbatim.xml` and `ca_profile.xml`. Every one has to be a real URL:
-the submission scanner checks them.
+**3. Check the maintainer profile.** `templates/verbatim.xml` and
+`ca_profile.xml` already point at `wastedpadre/verbatim`, but `<DisplayName>` in
+`ca_profile.xml` is still `Your Name`. Every URL has to resolve: the submission
+scanner checks them.
 
 **4. Create a support location.** Enable GitHub Discussions on the repo, or
 start an Unraid forum thread. `<Support>` cannot be empty.
@@ -250,11 +251,12 @@ the listing before anything is published.
 ### Before you submit
 
 - Test the published image on a clean Unraid box —
-  `docker run ... ghcr.io/YOUR_USER/verbatim:latest` — rather than your local
+  `docker run ... ghcr.io/wastedpadre/verbatim:latest` — rather than your local
   build. A locally built image can hide a missing file that a fresh pull won't.
-- `templates/verbatim.xml` is the **public** template and ships generic
-  defaults. `unraid-template.xml` in the repo root is a personal one with a
-  specific GPU UUID and library path; do not submit that one.
+- `templates/verbatim.xml` is the **public** template and is the one to submit.
+  `unraid-template.xml` in the repo root is the personal variant: it expects an
+  image you built locally rather than one pulled from a registry, so CA could
+  never install from it.
 - State the Nvidia Driver plugin requirement clearly. Users without a CUDA GPU
   will install it, get CPU inference at roughly ten times the runtime, and
   report it as a bug.

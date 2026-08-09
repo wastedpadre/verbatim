@@ -2,9 +2,9 @@
 <Container version="2">
   <Name>Verbatim</Name>
 
-  <!-- Replace YOUR_GITHUB_USER everywhere below before submitting. CA pulls
-       this image, it never builds from source, so it must be public. -->
-  <Repository>ghcr.io/YOUR_GITHUB_USER/verbatim:latest</Repository>
+  <!-- CA pulls this image, it never builds from source, so the GHCR package
+       must be set to public after the first workflow run. -->
+  <Repository>ghcr.io/wastedpadre/verbatim:latest</Repository>
   <Registry>https://ghcr.io</Registry>
 
   <Network>bridge</Network>
@@ -12,10 +12,10 @@
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
 
-  <Support>https://github.com/YOUR_GITHUB_USER/verbatim/discussions</Support>
-  <Project>https://github.com/YOUR_GITHUB_USER/verbatim</Project>
-  <Icon>https://raw.githubusercontent.com/YOUR_GITHUB_USER/verbatim/main/frontend/public/icon-192.png</Icon>
-  <TemplateURL>https://raw.githubusercontent.com/YOUR_GITHUB_USER/verbatim/main/templates/verbatim.xml</TemplateURL>
+  <Support>https://github.com/wastedpadre/verbatim/discussions</Support>
+  <Project>https://github.com/wastedpadre/verbatim</Project>
+  <Icon>https://raw.githubusercontent.com/wastedpadre/verbatim/main/frontend/public/icon-192.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/wastedpadre/verbatim/main/templates/verbatim.xml</TemplateURL>
 
   <Overview>
     Generates English closed captions from the English dub audio track of your
