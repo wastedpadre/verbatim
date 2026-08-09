@@ -90,7 +90,7 @@ export default function App() {
                 text={
                   info.device === "cuda"
                     ? "Transcribing on the GPU. A 24-minute episode takes a few minutes."
-                    : "Running on CPU — roughly ten times slower. Usually means the --gpus request silently failed."
+                    : "Running on CPU, roughly ten times slower. Usually means the --gpus request silently failed."
                 }
               >
                 <span className="chip mono">
@@ -111,7 +111,7 @@ export default function App() {
               {connected ? "live" : "reconnecting"}
             </span>
           </Tip>
-          <Tip text="Live server log — which audio track was picked, what the pipeline is doing, and why anything failed. Same output as docker logs.">
+          <Tip text="Live server log: which audio track was picked, what the pipeline is doing, and why anything failed. Same output as docker logs.">
             <button
               className={`chip chip-btn ${logsOpen ? "on" : ""}`}
               onClick={() => setLogsOpen((v) => !v)}
@@ -154,7 +154,7 @@ export default function App() {
 
       <footer className="sitefoot">
         <span>
-          Verbatim — developed by{" "}
+          Verbatim · developed by{" "}
           <a href={GITHUB} target="_blank" rel="noreferrer">
             wastedpadre
           </a>

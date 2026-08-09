@@ -92,7 +92,7 @@ function Job({ job, onChange, onEdit, onPreview }) {
           </Tip>
         )}
         {job.status === "done" && (
-          <Tip text="Download a copy. The file is already written next to the video — this is only for taking it elsewhere.">
+          <Tip text="Download a copy. The file is already written next to the video; this is only for taking it elsewhere.">
             <a className="mini" href={srtUrl(job.id)} download>Download SRT</a>
           </Tip>
         )}
@@ -134,7 +134,7 @@ export default function Queue({ jobs, onChange, onEdit, onPreview }) {
       {anyDone && (
         <p className="pane-note">
           The <code>.srt</code> is written next to the video. Jellyfin selects it
-          on its own; <strong>Plex does not</strong> — play the episode, open the
+          on its own; <strong>Plex does not</strong>. Play the episode, open the
           subtitle menu and pick{" "}
           <strong>English (SRT External)</strong>. Set it as the default for the
           series under <em>Settings → Subtitles</em> if you don't want to repeat it.

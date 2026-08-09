@@ -224,7 +224,7 @@ export default function CueEditor({ job, rules, onClose }) {
   }, []);
 
   /** The reason this editor exists. When the glossary misses a name, the
-   *  decoder gets it wrong the same way in every single cue — so fixing it
+   *  decoder gets it wrong the same way in every single cue, so fixing it
    *  is one replace-all, not forty manual edits. */
   const replaceAll = useCallback(() => {
     if (!find.trim()) return;

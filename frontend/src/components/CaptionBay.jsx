@@ -77,7 +77,7 @@ export default function GenerationStatus({ job }) {
       </div>
 
       {/* A single most-recent line, purely so you can tell within seconds that
-          the right audio track was picked. Not a preview -- that's the player. */}
+          the right audio track was picked. Not a preview; that's the player. */}
       {glimpse && <p className="status-glimpse">{glimpse}</p>}
 
       {job.audio_note && <p className="status-note mono">{job.audio_note}</p>}

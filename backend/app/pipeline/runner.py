@@ -117,7 +117,7 @@ def run_job(job: dict):
             stats_polish = {}
 
         if not cues:
-            raise RuntimeError("Nothing survived cleanup — likely the wrong audio track")
+            raise RuntimeError("Nothing survived cleanup, likely the wrong audio track")
 
         dest = output_path(src)
         if dest.exists() and not config.OVERWRITE:

@@ -294,7 +294,7 @@ def save_cues(job_id: int, body: SaveBody):
 @app.get("/api/stream")
 async def stream(request: Request):
     """One SSE stream for the whole queue. Polls in-memory state rather than
-    plumbing events across the thread boundary — far fewer moving parts."""
+    plumbing events across the thread boundary, with far fewer moving parts."""
     async def gen():
         last = None
         while True:
@@ -387,7 +387,7 @@ async def sonarr(request: Request, token: str | None = None):
             created.append(db.enqueue(p, p.stem))
 
     for miss in unreachable:
-        log.warning("sonarr webhook: %s is not a file here (Sonarr said %s) — "
+        log.warning("sonarr webhook: %s is not a file here (Sonarr said %s). "
                     "set a path translation in Settings",
                     miss["looked_for"], miss["sonarr"])
     log.info("sonarr webhook queued %d job(s)", len(created))
@@ -428,7 +428,7 @@ def test_polish():
 
 @app.get("/api/settings/models")
 def list_models():
-    """Which models this key can actually call — beats guessing."""
+    """Which models this key can actually call. Beats guessing."""
     try:
         return {"models": providers.models(), "provider": config.POLISH_PROVIDER}
     except providers.ProviderError as exc:

@@ -1,10 +1,10 @@
 /* ---------------------------------------------------------------------------
-   Verbatim — visual system
+   Verbatim visual system
 
    The reference isn't a SaaS dashboard, it's a caption workstation: dark
    blue-slate console surfaces, tabular timecodes, and one loud colour that
    belongs to the subject itself. Closed captions have rendered in that same
-   amber-yellow since line-21 teletext, so it's the accent — used only where
+   amber-yellow since line-21 teletext, so it's the accent, used only where
    caption text or live decoding is literally happening, never as decoration.
 --------------------------------------------------------------------------- */
 
@@ -19,7 +19,7 @@
   --dim: #78849e;
   --dimmer: #4d5772;
 
-  --caption: #ffd84d;   /* CC amber — reserved for caption content */
+  --caption: #ffd84d;   /* CC amber, reserved for caption content */
   --live: #56d4e8;      /* decoding in progress */
   --ok: #4ade80;
   --bad: #f87171;
@@ -33,7 +33,7 @@
 
   /* Neutral grotesque, system-resident so there's no webfont round trip.
      Helvetica Neue on macOS, Roboto on Android/ChromeOS, Arial as the
-     universal floor -- all the same skeleton, no personality mismatch. */
+     universal floor, all the same skeleton, no personality mismatch. */
   --font-ui: "Helvetica Neue", Helvetica, Roboto, Arial, "Segoe UI", sans-serif;
 
   /* Kept ONLY where character alignment carries meaning: timecodes that must
@@ -92,7 +92,7 @@ button { cursor: pointer; border: none; background: none; }
   gap: 10px;
 }
 /* The mark carries the brand colour, so the wordmark beside it stays plain
-   white -- two gradients competing in a 40px-tall header reads as noise. */
+   white, because two gradients competing in a 40px-tall header reads as noise. */
 .wordmark-mark {
   height: 26px;
   width: auto;
@@ -481,7 +481,7 @@ button { cursor: pointer; border: none; background: none; }
   border-bottom: 1px solid var(--line-soft);
 }
 .cue:hover { background: rgba(255, 255, 255, 0.014); }
-/* A flagged cue gets a caption-amber edge — the same colour the caption bay
+/* A flagged cue gets a caption-amber edge, the same colour the caption bay
    uses, so "this is about the caption text" reads consistently. */
 .cue.flagged { box-shadow: inset 3px 0 0 var(--caption); }
 
@@ -971,7 +971,7 @@ button { cursor: pointer; border: none; background: none; }
 
 /* Restart-required callout. Amber is the caption accent and is otherwise
    reserved for caption content, but this is the one setting whose effect is
-   delayed -- worth the exception over letting it read like every other row. */
+   delayed, and worth the exception over letting it read like every other row. */
 .set-warn {
   margin: 14px 0 0;
   padding: 10px 12px;
@@ -1064,7 +1064,7 @@ a.chip-btn { text-decoration: none; display: inline-flex; align-items: center; }
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--caption);
-  /* The URL can carry a token, so it must not be silently clipped -- a
+  /* The URL can carry a token, so it must not be silently clipped, because a
      half-copied URL fails in a way that looks like a Sonarr problem. */
   overflow-wrap: anywhere;
 }
@@ -1072,7 +1072,7 @@ a.chip-btn { text-decoration: none; display: inline-flex; align-items: center; }
 
 /* ------------------------------------------------------------------ tooltip */
 
-/* Always below the trigger — see Tip.jsx. `left`/`top` come from the
+/* Always below the trigger; see Tip.jsx. `left`/`top` come from the
    trigger's measured rect, so only the horizontal centring lives here. */
 .tip {
   position: fixed;

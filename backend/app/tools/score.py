@@ -21,9 +21,9 @@ Two numbers come back, and they fail differently:
   accuracy  how many reference words we got right
   coverage  how much of the script we produced at all
 
-Low coverage with decent accuracy means dialogue is being dropped -- look at
+Low coverage with decent accuracy means dialogue is being dropped; look at
 the VAD settings and the filters in clean.py. Good coverage with low accuracy
-means the audio is being misheard -- look at the downmix in audio.py, since
+means the audio is being misheard; look at the downmix in audio.py, since
 a flat 5.1 downmix buries dialogue under the score.
 """
 import difflib
@@ -39,7 +39,7 @@ WORD_RE = re.compile(r"[a-z']+")
 
 # ASS/SSA subtitle tracks carry typesetting alongside dialogue. Converting one
 # to SRT keeps all of it, and counting that markup as words inflates the
-# reference wildly -- a 24-minute episode measured at 117k "words" is markup,
+# reference wildly: a 24-minute episode measured at 117k "words" is markup,
 # not dialogue.
 ASS_OVERRIDE_RE = re.compile(r"\{[^}]*\}")            # {\pos(640,50)\fad(200,0)}
 ASS_DRAWING_RE = re.compile(                          # vector shapes: m 0 0 l 96 0 b ...
@@ -54,7 +54,7 @@ def _strip(text: str) -> str:
     filtered ASS tag names ("an", "be", "blur", "fade", "clip", "move"), which
     silently deleted real English words from both sides of the comparison. The
     brace regex already removes whole override blocks, so the tag names never
-    survive as bare tokens anyway -- the blocklist was redundant and harmful.
+    survive as bare tokens anyway, so the blocklist was redundant and harmful.
     """
     text = ASS_OVERRIDE_RE.sub(" ", text)
     text = ASS_DRAWING_RE.sub(" ", text)

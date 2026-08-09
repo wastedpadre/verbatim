@@ -1,7 +1,7 @@
 """Keep the last N log lines in memory so the UI can show them.
 
-Everything interesting already goes to the logger — which track was picked,
-why a Sonarr path didn't resolve, which polish windows failed — but reading
+Everything interesting already goes to the logger: which track was picked,
+why a Sonarr path didn't resolve, which polish windows failed, but reading
 it means `docker logs`, and on Unraid that's a terminal most people won't
 open. This makes the same stream visible in the browser.
 
@@ -13,7 +13,7 @@ import logging
 import threading
 from collections import deque
 
-# ~1500 lines is a few full jobs — enough to cover "what happened on the
+# ~1500 lines is a few full jobs, enough to cover "what happened on the
 # episode before last" without holding a session's entire history.
 CAPACITY = 1500
 
@@ -54,7 +54,7 @@ def since(cursor: int) -> tuple[list[dict], int]:
     """Return (lines newer than cursor, new cursor).
 
     A cursor of 0 means "everything buffered", which is what a freshly
-    opened log panel wants — an empty box until the next line arrives would
+    opened log panel wants; an empty box until the next line arrives would
     look broken on an idle server.
     """
     with _lock:

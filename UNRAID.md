@@ -3,7 +3,7 @@
 Unraid does Docker differently enough from everywhere else that it's worth its
 own guide. Follow this instead of `START-HERE.md`.
 
-There are two ways to run it. **Path A (Compose)** is the one to use — it's
+There are two ways to run it. **Path A (Compose)** is the one to use: it's
 fewer steps and it's how you'll rebuild after any change. **Path B (Template)**
 is optional, for getting it to appear in the Docker tab like a normal Unraid
 app with a WebUI button.
@@ -24,8 +24,8 @@ GPU-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 The project ships `NVIDIA_VISIBLE_DEVICES=all`, which hands over every card and
-needs no editing. To pin one card instead — worth doing if the box has a second
-GPU you want left alone — put that UUID in `docker-compose.yml` and
+needs no editing. To pin one card instead (worth doing if the box has a second
+GPU you want left alone), put that UUID in `docker-compose.yml` and
 `unraid-template.xml`.
 
 **2. Compose Manager plugin.** Apps tab → search `Docker Compose Manager` →
@@ -44,7 +44,7 @@ later problem would just be a confusing symptom of this one.
 
 ---
 
-## Path A — Compose (recommended)
+## Path A: Compose (recommended)
 
 ### 1. Get the source onto the server
 
@@ -59,7 +59,7 @@ Easiest way: Unraid exposes shares over SMB, so open `\\TOWER\appdata` in
 Explorer (or `smb://tower/appdata` in Finder) and drop the unzipped `verbatim`
 folder in, renamed to `verbatim-src`.
 
-Confirm the structure survived the copy — open the Unraid terminal:
+Confirm the structure survived the copy. Open the Unraid terminal:
 
 ```bash
 ls /mnt/user/appdata/verbatim-src
@@ -94,7 +94,7 @@ ls /mnt/user/media/anime
 ```
 
 **If you use the TRaSH / hardlink layout** (`/mnt/user/data/media/...`), do
-this instead — mount the single data root at the same container path Sonarr
+this instead: mount the single data root at the same container path Sonarr
 uses:
 
 ```yaml
@@ -111,14 +111,14 @@ now rather than debugging it later.
 **Docker tab → Compose → Add New Stack.** Name it `verbatim`.
 
 Click the gear next to it → **Edit Stack** → **Compose File**. Rather than
-pasting the file contents, point it at the directory you created — Compose
+pasting the file contents, point it at the directory you created; Compose
 Manager has a field for the stack directory. Set it to:
 
 ```
 /mnt/user/appdata/verbatim-src
 ```
 
-Then **Compose Up**. The first build takes 5–15 minutes and produces a lot of
+Then **Compose Up**. The first build takes 5-15 minutes and produces a lot of
 scrolling output; that's normal. It's downloading a CUDA base image,
 installing Python and ffmpeg, and compiling the React UI.
 
@@ -135,7 +135,7 @@ docker compose up -d --build
 
 ---
 
-## Path B — Unraid template (optional)
+## Path B: Unraid template (optional)
 
 This gets Verbatim into the Docker tab with a proper WebUI button, editable
 variables, and Unraid's normal start/stop controls.
@@ -159,7 +159,7 @@ containers fighting over port 8080.
 ## Unraid-specific gotchas
 
 **Keep `/config` on a cache pool.** That's where the job database and the 3 GB
-speech model live. Appdata defaults to cache, so this is usually automatic —
+speech model live. Appdata defaults to cache, so this is usually automatic,
 but if your appdata share is set to `Yes` for "Use cache pool" with mover
 enabled, the model can get shuffled to the array and everything slows down.
 Set that share to `Prefer` or `Only`.
@@ -173,7 +173,7 @@ GPU-bound, not disk-bound, but reading a 4 GB remux off a degraded array while
 parity is running will bottleneck the ffmpeg extraction step badly.
 
 **Writes go to your media share.** Verbatim writes the `.srt` next to each
-video, so the `/media` mount needs `rw` — it's set that way by default, but if
+video, so the `/media` mount needs `rw`; it's set that way by default, but if
 you tightened it to `ro`, jobs will fail at the very last step after doing all
 the work.
 
@@ -183,7 +183,7 @@ containers (Plex, Jellyfin, Tdarr), which only need `video` and `utility`.
 CUDA compute is a separate capability. If `compute` isn't in that list, the
 container starts fine, reports no CUDA device, and falls back to CPU without
 logging an error. Both `docker-compose.yml` and the template set
-`compute,utility` already — just don't strip it when copying params around.
+`compute,utility` already; just don't strip it when copying params around.
 
 **Leave `CONCURRENCY` at 1.** Two jobs on one GPU contend for the same VRAM
 and both run slower. On an 8 GB card it will also run out of memory outright.
@@ -195,7 +195,7 @@ for the same 8 GB. `large-v3` at `float16` holds roughly 4.7 GB for the whole
 job, so a couple of simultaneous Plex transcodes can push the card into OOM
 and fail the job mid-run. Two ways to avoid it:
 
-- Set `COMPUTE_TYPE=int8_float16` in `.env` -- drops Verbatim to about
+- Set `COMPUTE_TYPE=int8_float16` in `.env`, which drops Verbatim to about
   2.6 GB, leaving real headroom. Small accuracy cost.
 - Or caption when nothing else is using the GPU.
 
@@ -216,7 +216,7 @@ nvidia-smi --query-gpu=memory.used,memory.total,utilization.gpu \
 - Method: POST
 - Triggers: **On Import** and **On Upgrade**
 
-Hit **Test** — you should get a green tick, and `docker compose logs` will
+Hit **Test**: you should get a green tick, and `docker compose logs` will
 show the request arrive.
 
 The catch worth understanding: Sonarr sends the file path *as Sonarr sees it*.
@@ -242,7 +242,7 @@ docker compose up -d --build    # rebuild after changing code or .env
 
 ## Troubleshooting
 
-**It runs but every episode takes 30+ minutes** — it's on CPU. The GPU request
+**It runs but every episode takes 30+ minutes**: it's on CPU. The GPU request
 failed silently. Check:
 
 ```bash
@@ -252,17 +252,17 @@ docker exec verbatim python3 -c "import ctranslate2; print(ctranslate2.get_cuda_
 `0` means no GPU. Re-run the `nvidia-smi` test from Prerequisites, and confirm
 `runtime: nvidia` survived any edits to your compose file.
 
-**`unknown or invalid runtime name: nvidia`** — the Nvidia Driver plugin isn't
+**`unknown or invalid runtime name: nvidia`**: the Nvidia Driver plugin isn't
 installed, or you didn't reboot after installing it.
 
-**Library pane is empty** — the left side of your `/media` volume line doesn't
+**Library pane is empty**: the left side of your `/media` volume line doesn't
 point at real files, or `MEDIA_ROOTS` in `.env` doesn't match the container
 path. Both have to agree.
 
-**Captions don't match the audio at all** — it picked the Japanese track. The
+**Captions don't match the audio at all**: it picked the Japanese track. The
 UI shows which stream it chose under the progress ribbon. See the
 Troubleshooting section in `README.md`.
 
-**Anything mentioning `libcudnn`** — the CUDA base image and the ctranslate2
+**Anything mentioning `libcudnn`**: the CUDA base image and the ctranslate2
 pin have drifted apart. If you didn't edit `Dockerfile` or `requirements.txt`,
 this shouldn't happen; if you did, both must move together.

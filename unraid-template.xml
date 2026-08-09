@@ -68,7 +68,7 @@
           Type="Variable" Display="advanced" Required="false" Mask="false">float16</Config>
 
   <Config Name="Concurrent Jobs" Target="CONCURRENCY" Default="1"
-          Description="Episodes transcribed at once. Leave at 1 for a single GPU -- two jobs on one card contend for VRAM and will OOM on 8 GB."
+          Description="Episodes transcribed at once. Leave at 1 for a single GPU: two jobs on one card contend for VRAM and will OOM on 8 GB."
           Type="Variable" Display="advanced" Required="false" Mask="false">1</Config>
 
   <Config Name="Media Roots" Target="MEDIA_ROOTS" Default="/media"

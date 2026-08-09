@@ -67,7 +67,7 @@ def _split_lines(text: str) -> str:
             best, best_cost = (top, bottom), cost
 
     if best is None:
-        # No balanced two-line split exists — usually long unbroken words.
+        # No balanced two-line split exists, usually long unbroken words.
         # Fall back to a greedy wrap rather than emitting an overlong line.
         return "\n".join(wrap(text))
     return best[0] + "\n" + best[1]
@@ -75,7 +75,7 @@ def _split_lines(text: str) -> str:
 
 def build_cues(segments: list[dict]) -> list[dict]:
     # Carry the source segment index along. A segment boundary is a real
-    # signal — the decoder put it there — so we let it end a cue rather than
+    # signal: the decoder put it there, so we let it end a cue rather than
     # running two utterances together.
     words = []
     for si, seg in enumerate(segments):
@@ -152,7 +152,7 @@ def build_cues(segments: list[dict]) -> list[dict]:
 
     # Stop consecutive cues from overlapping after the CPS stretch above.
     # Never letting a cue run into the next one takes priority over holding
-    # it for the minimum duration — an overlap is a visible rendering bug,
+    # it for the minimum duration: an overlap is a visible rendering bug,
     # a slightly short cue is not.
     for a, b in zip(cues, cues[1:]):
         if a["end"] > b["start"] - 0.04:

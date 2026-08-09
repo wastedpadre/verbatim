@@ -1,6 +1,6 @@
 name: Build and publish image
 
-# Community Applications installs by pulling a public image -- it never
+# Community Applications installs by pulling a public image; it never
 # builds from source. So the image has to exist in a public registry before
 # a template can reference it.
 on:

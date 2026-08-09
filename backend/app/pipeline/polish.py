@@ -107,7 +107,7 @@ def _acceptable(original: str, proposed: str) -> tuple[bool, str]:
 
 
 def polish(cues: list[dict], terms: list[str]) -> tuple[list[dict], list[dict]]:
-    """Return (cues, changes). Timings are never touched — only cue text.
+    """Return (cues, changes). Timings are never touched, only cue text.
 
     Cues are returned in the same order and the same count as they came in.
     """
@@ -128,7 +128,7 @@ def polish(cues: list[dict], terms: list[str]) -> tuple[list[dict], list[dict]]:
         try:
             return span, _call(cues[start:end], terms, start)
         except providers.ProviderError as exc:
-            # A polish failure must never fail the job -- unpolished cues are
+            # A polish failure must never fail the job: unpolished cues are
             # still perfectly usable output.
             log.warning("polish: window %d-%d failed (%s), keeping originals",
                         start, end, exc)

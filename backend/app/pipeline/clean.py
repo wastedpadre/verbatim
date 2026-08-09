@@ -77,7 +77,7 @@ def _looks_hallucinated(seg: dict) -> bool:
         return True
 
     # Script drift. The audio is an English dub, so a segment made largely of
-    # CJK, Cyrillic, Arabic or similar isn't a mistranscription — it's the
+    # CJK, Cyrillic, Arabic or similar isn't a mistranscription; it's the
     # decoder inventing output for non-speech audio. This happens even with
     # the language pinned to English, and it's most visible when VAD is
     # relaxed enough to pass music and silence through.

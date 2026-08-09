@@ -16,7 +16,7 @@ _model_lock = threading.Lock()
 
 
 def get_model() -> WhisperModel:
-    """Load once and keep resident — a cold large-v3 load costs ~20s and
+    """Load once and keep resident: a cold large-v3 load costs ~20s and
     several GB of VRAM churn."""
     global _model
     with _model_lock:
@@ -31,7 +31,7 @@ def get_model() -> WhisperModel:
 
 
 # ctranslate2 reports int8 compute types as available on cards whose cuBLAS
-# has no int8 GEMM path -- get_supported_compute_types("cuda") lists
+# has no int8 GEMM path: get_supported_compute_types("cuda") lists
 # int8_float16 on Blackwell, then the first matmul dies. There is no cheap way
 # to detect that up front, so translate the error instead of preflighting it.
 _CUBLAS_HINT = (
@@ -51,9 +51,9 @@ def _explain_cuda(exc: Exception) -> Exception:
 def transcribe(audio_path: Path, prompt: str, on_progress=None) -> list[dict]:
     """Yield word-timed segments. on_progress(seconds_done, text) is called
     as each segment decodes so the UI can show live output."""
-    # faster-whisper returns a generator, so the encoder — and the matmul
-    # that fails on an unsupported precision — runs during iteration, not on
-    # the call. The whole thing has to be inside the try.
+    # faster-whisper returns a generator, so the encoder runs during
+    # iteration rather than on the call, and so does the matmul that fails on
+    # an unsupported precision. The whole thing has to be inside the try.
     try:
         return _run(get_model(), audio_path, prompt, on_progress)
     except Exception as exc:  # noqa: BLE001 - ctranslate2 raises bare RuntimeError
@@ -68,7 +68,7 @@ def _run(model, audio_path: Path, prompt: str, on_progress) -> list[dict]:
         word_timestamps=True,
         initial_prompt=prompt or None,
         # Each segment is decoded independently. Left on, a single hallucinated
-        # line poisons every subsequent one — that's the "thanks for watching"
+        # line poisons every subsequent one; that's the "thanks for watching"
         # death spiral you see on music-heavy content.
         condition_on_previous_text=False,
         vad_filter=config.VAD_FILTER,

@@ -14,7 +14,7 @@ function reasonLabel(key) {
 /**
  * Pre-flight before queueing a whole folder.
  *
- * The count alone isn't enough — "will process 6 of 12" invites the question
+ * The count alone isn't enough: "will process 6 of 12" invites the question
  * "why not the other 6?", and the answers are genuinely different in kind.
  * A file skipped because the release already ships dubtitles is a success;
  * one skipped for no English audio might mean a mistagged release you'd want

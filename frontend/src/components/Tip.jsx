@@ -4,7 +4,7 @@ import { cloneElement, useCallback, useRef, useState } from "react";
  * Hover/focus tooltip, always below its trigger.
  *
  * Below rather than above because the most-hovered controls are the topbar
- * chips, and there is no room over those — the header sits against the top
+ * chips, and there is no room over those: the header sits against the top
  * of the viewport, so an above-placement bubble renders half off-screen.
  *
  * Positioned `fixed` against the trigger's measured rect rather than
@@ -25,7 +25,7 @@ export default function Tip({ text, children }) {
     setBox({
       // Clamped so a tooltip on a control near either edge stays on screen.
       // Half the max width plus the margin, which is what keeps the Support
-      // chip's tip — the rightmost control on the page — fully visible.
+      // chip's tip, the rightmost control on the page, fully visible.
       left: Math.min(Math.max(r.left + r.width / 2, 140), window.innerWidth - 140),
       top: r.bottom + 8,
     });

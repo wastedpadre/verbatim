@@ -20,7 +20,7 @@ const MODEL_FIELD = {
 /**
  * Model picker: a dropdown that stays open-ended.
  *
- * A hardcoded list would go stale — vendors retire model IDs constantly,
+ * A hardcoded list would go stale: vendors retire model IDs constantly,
  * which is the whole reason "List available models" exists. So the options
  * are the shipped suggestions merged with whatever that button returned for
  * this key, plus the current value, plus a Custom escape hatch for anything
@@ -32,7 +32,7 @@ function ModelField({ field, value, onChange, extra }) {
   const options = useMemo(() => {
     const seen = new Set([...(extra || []), ...(field.suggestions || [])]);
     // Keep whatever is saved selectable even when the vendor no longer
-    // lists it — otherwise opening Settings silently reassigns the model.
+    // lists it; otherwise opening Settings silently reassigns the model.
     if (value) seen.add(value);
     return [...seen];
   }, [extra, field.suggestions, value]);
@@ -176,7 +176,7 @@ function SonarrHook({ token }) {
         In Sonarr: <strong>Settings → Connect → + → Webhook</strong>, method POST,
         triggers <strong>On Import</strong> and <strong>On Upgrade</strong>. To
         caption only some of your library, tag those series in Sonarr and set the
-        same tag on the connection — Sonarr then never calls out for anything
+        same tag on the connection, and Sonarr then never calls out for anything
         else, which beats filtering here.
       </span>
       <div className="hook-url">
@@ -188,7 +188,7 @@ function SonarrHook({ token }) {
         </Tip>
       </div>
       <span className="set-hint">
-        Sonarr's <em>Test</em> button should return success immediately — it never
+        Sonarr's <em>Test</em> button should return success immediately; it never
         queues anything. If real imports do nothing, the paths don't match: check
         the container log for “is not a file here” and set a translation above.
       </span>
@@ -259,7 +259,7 @@ export default function Settings({ onClose }) {
           ? {
               text: `Saved. ${pendingRestart.join(" and ")} ` +
                 `${pendingRestart.length > 1 ? "take" : "takes"} effect when the ` +
-                `container next starts — everything else applies to the next job.`,
+                `container next starts. Everything else applies to the next job.`,
             }
           : { text: "Saved. Applies to the next job." }
       );
@@ -364,7 +364,7 @@ export default function Settings({ onClose }) {
             {group.key === "model" && (
               <p className="set-warn">
                 <strong>Takes effect on the next container start</strong>, not the
-                next job — the model is loaded once at startup and held in VRAM.
+                next job: the model is loaded once at startup and held in VRAM.
                 Restart the container from the Docker tab, or{" "}
                 <code>docker compose restart</code>. Switching to a model you
                 haven't used before downloads it first (about 3 GB for large-v3),
@@ -390,7 +390,7 @@ export default function Settings({ onClose }) {
 
                 {test && (
                   <p className={test.ok ? "test-ok" : "test-bad"}>
-                    {test.ok ? "Working — " : "Failed — "}
+                    {test.ok ? "Working: " : "Failed: "}
                     {test.detail}
                   </p>
                 )}
@@ -410,7 +410,7 @@ export default function Settings({ onClose }) {
         <p className="set-footnote">
           Everything here is written to <code>/config/settings.json</code> and
           layered over your <code>.env</code> at startup, so it survives a
-          container recreate — and so a value set here wins over the same
+          container recreate, and so a value set here wins over the same
           variable in <code>.env</code> from then on. Paths and{" "}
           <code>DEVICE</code> stay env-only: the mounts can't change without
           recreating the container anyway, and the only reason to leave{" "}

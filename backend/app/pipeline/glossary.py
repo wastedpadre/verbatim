@@ -2,7 +2,7 @@
 
 The insight this whole app hangs on: dual-audio releases ship an English
 *sub* track. The dub script rewrites the dialogue heavily so we can't use its
-wording — but every character name, place, technique and invented term in the
+wording, but every character name, place, technique and invented term in the
 episode is sitting in there, already spelled correctly.
 
 We extract only that vocabulary: a bare list of proper nouns. It steers the
@@ -52,7 +52,7 @@ def from_srt(path: Path) -> list[str]:
         line = _strip(line)
         if not line or TIMECODE_RE.match(line):
             continue
-        # Drop the first word of each sentence — capitalisation there is
+        # Drop the first word of each sentence: capitalisation there is
         # grammatical, not a signal that it's a name.
         for sentence in re.split(r"(?<=[.!?])\s+", line):
             words = sentence.split()

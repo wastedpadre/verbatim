@@ -43,7 +43,7 @@ def conn() -> sqlite3.Connection:
         # checkpointing, then a later startup blocks forever in
         # uninterruptible I/O during WAL recovery, before anything has
         # logged. TRUNCATE keeps the rollback journal in one file and is
-        # more than fast enough here -- this is a single-writer workload
+        # more than fast enough here: this is a single-writer workload
         # with a handful of writes per job.
         c.execute("PRAGMA journal_mode=TRUNCATE")
         c.execute("PRAGMA synchronous=NORMAL")
@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS scan_cache (
 def scan_cache_get(path: str, mtime: float, size: int) -> dict | None:
     """Cached ffprobe result, invalidated if the file changed on disk.
 
-    Probing is the slow part of a batch pre-flight -- a few hundred
+    Probing is the slow part of a batch pre-flight: a few hundred
     milliseconds per file over a network share, times a whole library. Keying
     on mtime and size means a re-scan of an unchanged folder is instant.
     """

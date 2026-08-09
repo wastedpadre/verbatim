@@ -85,7 +85,7 @@ export default function CaptionPlayer({ job, onClose }) {
     [duration]
   );
 
-  // Step to the next/previous cue boundary — far more useful than blind
+  // Step to the next/previous cue boundary, far more useful than blind
   // seeking when you're checking whether a specific line reads correctly.
   const step = useCallback(
     (dir) => {
@@ -147,7 +147,7 @@ export default function CaptionPlayer({ job, onClose }) {
       <div className="transport">
         <div className="track">
           {/* Every cue as a tick, so gaps in dialogue are visible at a glance
-              — a long empty stretch is either a silent scene or missed lines. */}
+              a long empty stretch is either a silent scene or missed lines. */}
           <div className="track-cues">
             {gaps.map((g, i) => (
               <span

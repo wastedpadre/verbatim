@@ -3,7 +3,7 @@
 Generates English closed captions from the **English dub audio track** of your
 own media. Dubtitles are notoriously hard to find because almost every
 "English" subtitle file floating around is a translation of the *Japanese*
-audio — the dub script is a different adaptation and rarely matches. This
+audio; the dub script is a different adaptation and rarely matches. This
 transcribes what the dub actually says.
 
 Runs as one container. React UI, FastAPI backend, faster-whisper on your GPU.
@@ -20,7 +20,7 @@ subtitle streams. Picking the wrong one silently produces nonsense, so
 tells you in the UI which one it chose.
 
 **Glossary priming.** Your releases almost always carry the English *sub*
-track. The dub rewrites the dialogue so its wording is useless to us — but
+track. The dub rewrites the dialogue so its wording is useless to us, but
 every character name, place, and invented term is in there, spelled correctly.
 Verbatim extracts only that vocabulary, feeds it to the decoder as a prompt,
 and fuzzy-corrects near-misses afterward. This is the single biggest quality
@@ -37,7 +37,7 @@ per line, 2 lines max, 20 characters per second, no overlaps, breaks at clause
 boundaries rather than mid-phrase.
 
 **A caption editor for the rest.** No ASR pass is perfect. Click **Edit
-captions** on any finished job to fix what's left — with the tool built around
+captions** on any finished job to fix what's left, with the tool built around
 the failure mode that actually happens.
 
 **A live log.** **Show logs** in the top bar streams the server log into the
@@ -55,7 +55,7 @@ click.
 
 Everything else is there for the leftovers:
 
-- **Live validation** against the same rules the backend shaped with — line
+- **Live validation** against the same rules the backend shaped with: line
   length, line count, reading speed, overlaps, cues too short to read. Flagged
   cues get an amber edge.
 - **Show flagged only** filters to just the cues that break a rule, so you're
@@ -69,7 +69,7 @@ Everything else is there for the leftovers:
 - `Cmd/Ctrl+S` saves. Closing with unsaved changes warns first.
 
 The server re-validates everything on save regardless of what the editor
-sends — sorts by start time, repairs overlaps, rejects reversed timecodes —
+sends (sorts by start time, repairs overlaps, rejects reversed timecodes),
 because this file gets written straight into your media folder.
 
 ---
@@ -87,7 +87,7 @@ Open `http://<host>:8080`, browse to a folder, tick episodes, hit
 Output lands next to the video as `Episode.en.dubtitles.srt`. No remux needed.
 
 **Selecting it in your player.** Jellyfin detects the sidecar and turns it on by
-itself. **Plex detects it but will not switch to it** — during playback, open the
+itself. **Plex detects it but will not switch to it**: during playback, open the
 subtitle menu and choose **English (SRT External)**. To stop doing that every
 episode, set it once per series under *Settings → Subtitles*, or enable
 *Automatically select subtitles* in your Plex player preferences. If it isn't
@@ -96,7 +96,7 @@ that show.
 
 ### On Unraid
 
-**See `UNRAID.md`** — it's the full walkthrough, and Unraid's GPU passthrough
+**See `UNRAID.md`**: it's the full walkthrough, and Unraid's GPU passthrough
 differs enough from stock Docker that the generic instructions will quietly
 leave you running on CPU.
 
@@ -119,12 +119,12 @@ method POST, triggers **On Import** and **On Upgrade**.
 
 One catch: Sonarr sends the path *as Sonarr sees it*. If Sonarr's path is
 `/tv/Show/Episode.mkv` and Verbatim's is `/media/Show/Episode.mkv`, the webhook
-can't find the file — and the POST still succeeds, so nothing looks wrong.
+can't find the file, and the POST still succeeds, so nothing looks wrong.
 Either mount the same host path at the same container path in both (simplest),
 or set a translation: `SONARR_PATH_MAP=/tv:/media`. When a path doesn't
 resolve, the container log says `is not a file here` and names both sides.
 
-Sonarr's own **Test** button always succeeds — it sends no file path, so it
+Sonarr's own **Test** button always succeeds: it sends no file path, so it
 proves the URL is reachable and nothing else.
 
 ### Captioning only part of your library
@@ -139,7 +139,7 @@ Two ways, and the first is better because nothing leaves Sonarr:
    `standard`, `daily` or `anime` and sends that on the webhook; anything else
    is skipped and logged with the type it saw. Blank accepts everything.
 
-Use the second as a backstop for the first — a series added without the tag
+Use the second as a backstop for the first: a series added without the tag
 still gets filtered. If you set a type filter and *nothing* gets captioned,
 check the log: it prints the series type it actually received, which is
 `unset` on Sonarr versions that don't send the field.
@@ -148,7 +148,7 @@ check the log: it prints the series type it actually received, which is
 
 ## Word repair providers
 
-The optional repair pass runs on **Gemini, OpenAI or Anthropic** — set
+The optional repair pass runs on **Gemini, OpenAI or Anthropic**: set
 `POLISH_PROVIDER`, or switch it live under **Settings → Word repair**. Each
 provider keeps its own key and model, so switching doesn't leave a model ID
 pointing at the wrong API.
@@ -159,20 +159,20 @@ pointing at the wrong API.
 | `openai` | platform.openai.com/api-keys | `gpt-4.1-mini` |
 | `anthropic` | console.anthropic.com | `claude-opus-5` |
 
-Gemini is the path with real mileage on it. The OpenAI and Anthropic adapters
-are built to each vendor's documented request shape and their error handling
-is exercised, but they have had far less real-world use — run **Test
-connection** after setting a key, and please open an issue if a provider
-misbehaves rather than assuming it's your key.
+All three are verified against live keys. Gemini has the most mileage, having
+run across real episodes; OpenAI and Anthropic are confirmed working end to
+end but have seen less use. Run **Test connection** after setting a key: it
+sends one real request in the same shape a job uses, so a bad key, a retired
+model ID or a parameter the model doesn't accept shows up in seconds.
 
 The task is constrained substitution, not reasoning, so the cheapest model in a
-family is usually enough — `claude-haiku-4-5` instead of Opus, a mini-class
+family is usually enough: `claude-haiku-4-5` instead of Opus, a mini-class
 model on OpenAI. **Test connection** sends one throwaway prompt so a bad key or
 a retired model ID surfaces in seconds rather than minutes into a job, and
 **List available models** asks the provider what your key can actually call.
 
 Whichever provider is selected, the same four guards apply to every proposed
-change, and a provider failure never fails the job — the window keeps its
+change, and a provider failure never fails the job; the window keeps its
 original cues.
 
 ---
@@ -180,7 +180,7 @@ original cues.
 ## Tuning
 
 Everything lives in `.env`, and almost all of it is also editable under
-**Settings** — including the VAD parameters, which apply to the next job with
+**Settings**: including the VAD parameters, which apply to the next job with
 no restart and no rebuild.
 
 Two exceptions are marked in the UI: **speech model** and **precision** are
@@ -214,37 +214,37 @@ right setting there; the gap is raw throughput, not precision support.
 
 ## When it goes wrong
 
-**`Could not load libcudnn_ops_infer.so`** — the classic. The `ctranslate2` pin
+**`Could not load libcudnn_ops_infer.so`**: the classic. The `ctranslate2` pin
 and the CUDA base image must agree on cuDNN major version. This image ships
 cuDNN 9 and pins `ctranslate2==4.5.0` to match. If you change either, change
 both.
 
-**Captions don't match the audio at all** — wrong track. The UI shows which
+**Captions don't match the audio at all**: wrong track. The UI shows which
 stream was picked under the progress ribbon. Some releases mislabel their
 language tags; check with `ffprobe -show_streams file.mkv`.
 
-**Everything is offset by a constant few seconds** — some WEB-DL muxes start
+**Everything is offset by a constant few seconds**: some WEB-DL muxes start
 audio after video. `audio_start_offset()` handles this, but if a file is still
 off, it's likely a variable-rate issue that needs `ffsubsync` instead.
 
-**Names still wrong** — the source had no text subtitle track to mine, so
+**Names still wrong**: the source had no text subtitle track to mine, so
 there was no glossary. Check the job card: it lists the terms it found. Bitmap
 subtitles (PGS/VobSub) can't be mined without OCR.
 
-**`cuBLAS failed with status CUBLAS_STATUS_NOT_SUPPORTED`** — the precision
+**`cuBLAS failed with status CUBLAS_STATUS_NOT_SUPPORTED`**: the precision
 isn't supported on your card. Blackwell (RTX 50-series) has no int8 cuBLAS
 path in this `ctranslate2` build, and the library advertises one anyway, so
 `int8_float16` fails at the first matmul. Set precision to `float16` under
 **Settings → Speech model** and restart. The app translates this error into
 that instruction rather than surfacing the raw cuBLAS text.
 
-**Nothing survived cleanup** — almost always the wrong audio track, or a track
+**Nothing survived cleanup**: almost always the wrong audio track, or a track
 that's pure music.
 
-**Anything else** — hit **Show logs** in the top bar. It streams the same
+**Anything else**: hit **Show logs** in the top bar. It streams the same
 output as `docker logs`, including `faster_whisper`'s own lines: which audio
 track was chosen, and how much audio VAD removed. That second number is the
-one to tune `VAD_THRESHOLD` against — if it's eating whole seconds of a
+one to tune `VAD_THRESHOLD` against. If it's eating whole seconds of a
 dialogue-heavy scene, lower the threshold.
 
 ---
@@ -296,5 +296,5 @@ aren't waiting on the GPU while iterating on UI.
 
 This transcribes audio from files you already have, for your own playback. It
 doesn't download anything or fetch subtitles from anywhere. Generated captions
-are a derivative of the original dub script — fine for personal accessibility
+are a derivative of the original dub script: fine for personal accessibility
 use, worth thinking twice about redistributing.

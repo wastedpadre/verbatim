@@ -4,8 +4,8 @@ import { subscribeLogs } from "../api";
 /**
  * Live server log, toggled from the topbar.
  *
- * Everything worth diagnosing already goes to the logger — the chosen audio
- * track, an unresolved Sonarr path, a failed polish window — but reading it
+ * Everything worth diagnosing already goes to the logger: the chosen audio
+ * track, an unresolved Sonarr path, a failed polish window, but reading it
  * otherwise means `docker logs`, which is a terminal most Unraid users
  * won't open.
  */

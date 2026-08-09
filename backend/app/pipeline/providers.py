@@ -3,7 +3,7 @@
 Every provider here answers the same question: given a system prompt and a
 numbered list of cues, return a JSON array of the lines to change. The
 guards in polish.py validate whatever comes back, so a provider only has to
-produce a list -- it does not have to produce a *good* list.
+produce a list; it does not have to produce a *good* list.
 
 Three functions per provider, because the Settings page needs all three:
 `complete` runs a window, `test` is the connection check, and `models` fills
@@ -88,7 +88,7 @@ def _parse(raw: str) -> list[dict]:
 def _gemini_thinking() -> dict:
     """Thinking controls differ by model generation and can't be combined.
 
-    Gemini 3.x takes thinkingLevel ("minimal" is the floor for Flash -- it
+    Gemini 3.x takes thinkingLevel ("minimal" is the floor for Flash, and it
     cannot be switched off entirely). Gemini 2.5 takes thinkingBudget, where
     0 does disable it. Sending both returns a 400, so pick one by model name.
     """
@@ -153,7 +153,7 @@ def _openai_reasoning() -> bool:
     """Whether the selected model is one of the reasoning families.
 
     They reject `temperature` outright, so sending it for determinism costs
-    a 400 on every window -- and the model picker lets anyone select one.
+    a 400 on every window, and the model picker lets anyone select one.
     """
     m = config.OPENAI_MODEL.lower()
     return m.startswith("o") or m.startswith("gpt-5")
@@ -345,7 +345,7 @@ def test() -> tuple[bool, str]:
 
 
 def models() -> list[str]:
-    """Which models this key can actually call -- beats guessing."""
+    """Which models this key can actually call. Beats guessing."""
     if not config.polish_key():
         raise ProviderError(f"No {config.POLISH_PROVIDER} API key set.")
     try:

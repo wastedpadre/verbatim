@@ -52,7 +52,7 @@ SONARR_TOKEN = os.getenv("SONARR_TOKEN", "")
 # "anime" here captions your anime and ignores the rest of the library.
 # Blank accepts everything. Comma-separate to allow several.
 #
-# Prefer filtering in Sonarr itself where you can -- a tag on the webhook
+# Prefer filtering in Sonarr itself where you can: a tag on the webhook
 # connection means non-anime imports never leave Sonarr. This is the backstop
 # for when that tag is missing or someone adds a series without it.
 SONARR_SERIES_TYPES = os.getenv("SONARR_SERIES_TYPES", "")
@@ -98,7 +98,7 @@ POLISH_PROVIDER = os.getenv("POLISH_PROVIDER", "gemini")
 PROVIDERS = ("gemini", "openai", "anthropic")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-# Google retires Gemini model IDs on a fast cadence -- gemini-2.5-flash was
+# Google retires Gemini model IDs on a fast cadence; gemini-2.5-flash was
 # already gone for new keys by mid-2026. The "-latest" alias tracks the
 # current Flash model automatically, which avoids a hard 404 every few
 # months. Pin an explicit ID (e.g. gemini-3.6-flash) if you'd rather control
@@ -111,7 +111,7 @@ OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 # Claude Opus 5 is the current default. This task is constrained substitution
 # rather than reasoning, so claude-haiku-4-5 costs a fraction and is usually
-# enough -- use "List available models" in Settings to switch.
+# enough, so use "List available models" in Settings to switch.
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-opus-5")
 
 
@@ -148,7 +148,7 @@ POLISH_MAX_WORD_DELTA = int(os.getenv("POLISH_MAX_WORD_DELTA", "1"))
 
 # ------------------------------------------------------------------ VAD
 # Voice activity detection gates audio BEFORE the model sees it, so anything
-# it misclassifies as non-speech is lost permanently — no later stage can
+# it misclassifies as non-speech is lost permanently; no later stage can
 # recover it. On dub audio with heavy scoring that's the main cause of
 # missing dialogue, so these are exposed for tuning without a rebuild.
 #
@@ -166,12 +166,12 @@ VAD_MIN_SILENCE_MS = int(os.getenv("VAD_MIN_SILENCE_MS", "400"))
 VAD_SPEECH_PAD_MS = int(os.getenv("VAD_SPEECH_PAD_MS", "400"))
 
 # Windows are independent, so they're sent concurrently. This is the single
-# biggest factor in how long the polish stage takes -- 20+ sequential calls
+# biggest factor in how long the polish stage takes: 20+ sequential calls
 # against a thinking model is minutes of pure waiting.
 POLISH_CONCURRENCY = int(os.getenv("POLISH_CONCURRENCY", "6"))
 
 # Gemini 3.x uses thinkingLevel; 2.5 uses thinkingBudget; sending both is a
-# 400. Gemini 3 Flash cannot disable thinking entirely -- "minimal" is the
+# 400. Gemini 3 Flash cannot disable thinking entirely; "minimal" is the
 # floor. This task is constrained substitution, not reasoning, so minimal is
 # what we want.
 POLISH_THINKING = os.getenv("POLISH_THINKING", "minimal")

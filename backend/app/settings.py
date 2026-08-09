@@ -2,12 +2,12 @@
 
 Environment variables set the defaults. Anything changed in the UI is written
 to /config/settings.json and layered on top at startup, so it survives a
-container recreate — which matters, because `--env-file` is only read when a
+container recreate, which matters because `--env-file` is only read when a
 container is created, making every toggle a rebuild-and-recreate cycle.
 
 Most settings here are re-read per job, so they take effect immediately. The
-few that aren't — MODEL_SIZE and COMPUTE_TYPE, which are bound when the model
-loads — are listed in RESTART_REQUIRED and flagged to the UI, so it can say
+few that aren't (MODEL_SIZE and COMPUTE_TYPE, which are bound when the model
+loads) are listed in RESTART_REQUIRED and flagged to the UI, so it can say
 "on next start" rather than implying a change that hasn't happened yet.
 
 DEVICE stays env-only on purpose: the only reason to move off cuda is to test
@@ -34,7 +34,7 @@ EDITABLE = {
                    "faster still and fine on clean dubs."),
     "COMPUTE_TYPE": (str, "model", "Precision",
                      "float16 uses ~4.7 GB of VRAM for large-v3 and works on every "
-                     "card. int8_float16 roughly halves that on an 8 GB card — but "
+                     "card. int8_float16 roughly halves that on an 8 GB card, but "
                      "not on an RTX 50-series, where int8 has no cuBLAS path and "
                      "every job fails."),
 
@@ -51,7 +51,7 @@ EDITABLE = {
     "OPENAI_API_KEY": (str, "polish", "OpenAI API key",
                        "From platform.openai.com/api-keys. Stored on your server."),
     "OPENAI_MODEL": (str, "polish", "OpenAI model",
-                     "A mini/small model is plenty — this is substitution, not reasoning."),
+                     "A mini/small model is plenty: this is substitution, not reasoning."),
     "ANTHROPIC_API_KEY": (str, "polish", "Anthropic API key",
                           "From console.anthropic.com. Stored on your server."),
     "ANTHROPIC_MODEL": (str, "polish", "Anthropic model",
@@ -150,7 +150,7 @@ GROUPS = [
     ("vad", "Voice activity detection",
      "VAD gates audio BEFORE the model sees it, so whatever it drops is gone for "
      "good. On dub audio with loud scoring this is the usual cause of missing "
-     "dialogue. These apply to the next job — no restart, no rebuild."),
+     "dialogue. These apply to the next job: no restart, no rebuild."),
     ("captions", "Caption formatting", "Shape and naming of the output."),
     ("sonarr", "Sonarr webhook", "Caption new episodes automatically as they import."),
 ]
@@ -209,7 +209,7 @@ def save(updates: dict) -> dict:
         for name, raw in updates.items():
             if name not in EDITABLE:
                 continue
-            # A masked value means the field wasn't edited — don't overwrite
+            # A masked value means the field wasn't edited, so don't overwrite
             # a real secret with its own placeholder.
             if name in SECRETS and isinstance(raw, str) and raw.startswith("•"):
                 continue

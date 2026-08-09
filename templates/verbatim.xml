@@ -41,7 +41,7 @@
 
     Point it at a folder, tick episodes, and it writes a sidecar `.srt` next to
     each video. Jellyfin selects it automatically. Plex detects it but does not
-    switch to it — during playback, choose "English (SRT External)" from the
+    switch to it. During playback, choose "English (SRT External)" from the
     subtitle menu, or set it as the default for the series in Plex's settings.
 
     ### How it gets usable output
@@ -111,7 +111,7 @@
           Type="Variable" Display="always" Required="false" Mask="false">large-v3</Config>
 
   <Config Name="Compute Type" Target="COMPUTE_TYPE" Default="float16"
-          Description="float16 is standard and works everywhere. int8_float16 roughly halves VRAM (~2.6 GB) on an 8 GB card shared with GPU transcoding — but NOT on RTX 50-series: Blackwell has no int8 cuBLAS path and jobs fail with CUBLAS_STATUS_NOT_SUPPORTED. Stay on float16 there."
+          Description="float16 is standard and works everywhere. int8_float16 roughly halves VRAM (~2.6 GB) on an 8 GB card shared with GPU transcoding, but NOT on RTX 50-series: Blackwell has no int8 cuBLAS path and jobs fail with CUBLAS_STATUS_NOT_SUPPORTED. Stay on float16 there."
           Type="Variable" Display="advanced" Required="false" Mask="false">float16</Config>
 
   <Config Name="Device" Target="DEVICE" Default="cuda"
